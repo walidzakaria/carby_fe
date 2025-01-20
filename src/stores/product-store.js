@@ -22,6 +22,7 @@ export const useProductStore = defineStore('product', {
   actions: {
     async listProducts() {
       try {
+        console.log('listing products...');
         const response = await api.get('/api/definitions/product/');
         this.products = response.data || [];
       } catch (error) {
@@ -65,6 +66,31 @@ export const useProductStore = defineStore('product', {
     async deleteProduct(productId) {
       try {
         const response = await api.delete(`/api/definitions/product/${productId}/`);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    async createDescription(descriptionInfo) {
+      try {
+        const response = await api.post('/api/definitions/description/', descriptionInfo);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    async updateDescription(descriptionInfo) {
+      try {
+        const id = descriptionInfo.id;
+        const response = await api.put(`/api/definitions/description/${id}/`, descriptionInfo);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    async deleteDescription(descriptionId) {
+      try {
+        const response = await api.delete(`/api/definitions/description/${descriptionId}/`);
         return response.data;
       } catch (error) {
         throw error;

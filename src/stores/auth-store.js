@@ -177,7 +177,6 @@ export const useAuthStore = defineStore('auth', {
     async heartbeat() {
       try {
         const response = await api.get('/auth/heartbeat/');
-        console.log(response);
       } catch (error) {
         console.log(error);
       }

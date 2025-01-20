@@ -1,875 +1,717 @@
 <template>
   <q-page class="q-pa-sm bg-white">
-    <div class="text-h4">{{ t('salesInvoice') }}</div>
-    <div class="row q-col-gutter-sm">
-      <div class="col-xl-7 col-lg-7 col-md-7 col-sm-12 col-xs-12">
-        <br>
-        <q-input dense rounded outlined v-model="searchInvoice" class="full-width"
-          :placeholder="t('enterInvoice')" @keyup.enter="findInvoice"
-          lazy-rules
-          :error="invoiceNotFound"
-          :error-message="t('invoiceNotFound')">
-          <template v-slot:append>
-            <q-btn round flat icon="search" color="blue" @click="findInvoice" />
-          </template>
-        </q-input>
-        <q-card bordered>
-          <q-card-section>
-            <div class="row">
-              <q-item class="col-6 q-pa-xs">
-                <q-select
-                  v-model="order.branch"
-                  :options="userBranches"
-                  option-label="name"
-                  option-value="id"
-                  :label="`${t('branch')} *`"
-                  emit-value
-                  map-options
-                  dense class="full-width"
-                />
-              </q-item>
-              <q-item class="col-6 q-pa-xs">
-                <person-search
-                  :listOptions="customers"
-                  :label="t('customer')"
-                  :default-selection="order.customer"
-                  :isOutlined="false"
-                  @value-update="customerUpdate"/>
-              </q-item>
-              <q-item class="col-6 q-pa-xs">
-                <q-select
-                  v-model="order.document_type"
-                  :options="docTypes"
-                  :label="`${t('docType')} *`"
-                  option-label="name"
-                  option-value="id"
-                  emit-value
-                  map-options
-                  dense class="full-width"
-                />
-              </q-item>
-              <q-item class="col-6 q-pa-xs">
-                <q-input
-                  dense autogrow
-                  v-model="order.internal_code"
-                  class="full-width"
-                  :label="t('internalCode')"/>
-              </q-item>
-              <q-item class="col-6 q-pa-xs">
-                <q-input  dense autogrow
-                  class="full-width"
-                  :label="`${t('date')} *`"
-                  v-model="order.date" mask="date" :rules="['date']"
-                  :disable="!isAdmin">
-                  <template v-slot:append>
-                    <q-icon name="event" class="cursor-pointer">
-                      <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                        <q-date v-model="order.date">
-                          <div class="row items-center justify-end">
-                            <q-btn v-close-popup label="Close" color="primary" flat />
-                          </div>
-                        </q-date>
-                      </q-popup-proxy>
-                    </q-icon>
-                  </template>
-                </q-input>
-              </q-item>
-              <q-item class="col-6 q-pa-xs">
-                <q-select
-                  v-model="order.document_status"
-                  :options="docStatus"
-                  :label="`${t('docStatus')} *`"
-                  option-label="name"
-                  option-value="id"
-                  emit-value
-                  map-options
-                  dense class="full-width"
-                />
-              </q-item>
-              <product-search ref="productSearchRef" :autohide="true" @submitProduct="submitProduct" class="col-12"/>
-            </div>
-          </q-card-section>
-        </q-card>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        <q-card bordered style="margin-top: 9px;">
-          <q-card-section class="text-primary">
-            <div class="text-subtitle1">Payment Info</div>
-          </q-card-section>
-          <q-card-section>
-            <div class="row" style="margin-top: -30px; margin-left: -24px; margin-right: -24px;">
-              <q-item class="flex-container">
-                <q-item-section
-                  class="flex-item"
-                  v-for="(p, index) in order.order_payments" :key="index">
-                  <q-input
-                      type="number"
-                      @keydown="preventArrowKeys"
-                      step="0.01"
-                      :label="p.label"
-                      v-model="p.value"
-                      min="1"
-                      lazy-rules
-                      dense
-                      outlined
-                      />
-                </q-item-section>
-              </q-item>
-              <q-card-section class="row col-12">
-                <div class="  col-12 text-h6 full-width">
-                  <div class="float-right q-mr-md" style="position: relative; margin-left: 0;">
-                    Rest : <span class="text-blue">L.E. <b>{{ restTotal.toFixed(2) || "0.00" }}</b></span>
-                  </div>
-                </div>
-              </q-card-section>
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
-      <div class="col-xl-5 col-lg-5 col-md-5 col-sm-12 col-xs-12" style="margin-top: -40px;">
-        <q-card class="bg-grey-2 no-shadow" bordered>
-          <q-card-section class="text-center text-h6 text-black ">
-            <q-icon name="shopping_cart" color="blue" class="q-mr-sm"/>
-            {{ order.id > 0 ? `Order# ${formattedCode}` : 'New Order' }}
-            <currency-indicator :total-amount="netTotal" />
-          </q-card-section>
-          <q-separator />
-          <q-card-section id="orderTable" class="q-pa-none q-ma-none" style="max-height: calc(100vh - 330px); overflow-y: auto;">
-            <q-table
-              style="min-height: calc(100vh - 330px);"
-              class="no-shadow q-pa-xs"
-              v-model:pagination="pagination"
-              :rows="order.order_items"
-              :columns="sales_column"
-              hide-header hide-bottom>
-              <template v-slot:body-cell-Name="props">
-                <q-td :props="props">
-                  <q-item>
-                    <q-item-section avatar>
-                      <q-avatar>
-                        <img :src="props.row.image"/>
-                      </q-avatar>
-                    </q-item-section>
-
-                    <q-item-section style="cursor: pointer;" @click="selectProduct(props.row.product)">
-                      <q-tooltip
-                        transition-show="flip-right"
-                        transition-hide="flip-left"
-                      >
-                        {{ t('updateTooltip') }}
-                      </q-tooltip>
-                        <q-item-section>
-                        <q-item-label>{{ props.row.name }}</q-item-label>
-                        <q-item-label caption class="">{{ props.row.quantity }} {{ props.row.unit_name }}s x {{ props.row.unit_price }}</q-item-label>
-                      </q-item-section>
-                      <q-popup-edit v-model="props.row" :title="t('updateProduct')">
-                        <q-item>
-                          <q-input type="number" dense outlined
-                            step="0.01" @keydown="preventArrowKeys"
-                            v-model="props.row.quantity"
-                            min="0"
-                            style="width: 80px; min-width: 80px;"
-                            :label="`${t('quantity')} *`"
-                            lazy-rules
-                            :rules="[val => !!val || t('required')]"
-                            @update:model-value="updatePrice(props.row)"/>
-                          <q-select
-                            v-model="props.row.unit"
-                            :options="productUnits"
-                            option-label="name"
-                            option-value="id"
-                            :label="`${t('unit')} *`"
-                            emit-value
-                            map-options
-                            dense outlined
-                            lazy-rules
-                            style="min-width: 100px;"
-                            :rules="[val => !!val || t('required')]"
-                            @update:model-value="updatePrice(props.row)"
-                          />
-                          <q-select
-                            dense outlined
-                            v-model="props.row.unit_price"
-                            use-input
-                            input-debounce="0"
-                            @new-value="createValue"
-                            :options="priceOptions"
-                            @filter="filterFn"
-                            :label="`${t('price')} *`"
-                            lazy-rules
-                            style="max-width: 170px;"
-                            hide-bottom-space
-                            :rules="[val => !!val || t('required')]"
-                            @update:model-value="updatePrice(props.row)"
-                          >
-                          </q-select>
-                        </q-item>
-                      </q-popup-edit>
-                    </q-item-section>
-                  </q-item>
-                </q-td>
-                <q-td :props="props" class="text-right">
-                  <b>L.E. {{ props.row.gross.toFixed(2) }}</b>
-                </q-td>
-                <q-td :props="props" class="text-right">
-                  <q-btn round flat icon="delete" color="red" @click="removeProduct(props.row.id)"></q-btn>
-                </q-td>
-              </template>
-            </q-table>
-          </q-card-section>
-          <q-separator/>
-        </q-card>
-        <br><br>
-        <q-card class="no-shadow" bordered>
-          <q-list>
-            <q-item clickable v-ripple>
-              <q-item-section avatar>
-                <q-avatar color="blue" text-color="white" icon="discount"/>
-              </q-item-section>
-              <q-input type="number"
-                :label="t('discount')"
-                dense outlined
-                step="0.01" @keydown="preventArrowKeys"
-                v-model="order.discount"></q-input>
-              <q-item-section side>
-                <q-toggle
-                  :label="order.discountType ? '%' : '$'"
-                  v-model="order.discountType"
-                />
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-card>
-        <div class="space"></div>
-      </div>
+    <div class="text-h4" style="text-align: center;">
+      <q-avatar size="45px" class="shadow-10">
+        <q-icon :name="getIcon(invoice.status)" :color="getColor(invoice.status)" />
+      </q-avatar>
+      {{ t(invoice.status.toLowerCase()) }}
     </div>
-    <q-page-sticky position="bottom-left" :offset="[18, 18]">
-      <q-btn fab icon="restart_alt" color="orange" @click="reset" />
-      <q-btn fab icon="qr_code" color="blue" @click="showScanner = true" />
-      <q-btn
-        :disabled="(order.id > 0 && !tablePermissions.sales.u) || (!order.id > 0 && !tablePermissions.sales.c)"
-        rounded
-        @click="saveOrder"
-        :loading="loading"
-        :disable="loading"
-        fab
-        color="green"
-        icon="save"
-        :label="t('placeOrder')">
-        <template v-slot:loading>
-          <q-spinner-facebook />
-        </template>
-      </q-btn>
-      <q-btn v-if="order.id > 0" fab icon="print" color="purple" @click="printReceipt" />
-      <q-btn v-if="order.id > 0 && tablePermissions.sales.d" fab icon="delete" color="red" @click="deleteInvoice" />
-    </q-page-sticky>
+    <q-form @submit.prevent="saveData">
+      <q-card-section class="row q-pb-lg flex-container" style="border-bottom: 1px solid lightgrey;">
+        <div class="col-lg-4 col-md-4 col-sm-12 col-xs-12"
+          :style="{ order: $q.screen.lt.md || locale === 'ar' ? 2 : 1 }">
+          <div class="text-subtitle1 text-grey-7" style="margin-top: 38px;" :dir="getDir">
+            <div class="row q-mt-sm text-subtitle1 text-grey-7">
+              <div class="col-xl-6 col-lg-6 col-md-5 col-sm-4 col-xs-12 q-pr-xl q-pl-md q-pt-xs" :class="locale === 'en' ? 'text-right' : 'text-left'">{{ t('status') }}:</div>
+              <div class="col-xl-6 col-lg-6 col-md-7 col-sm-8 col-xs-12">
+                <q-select
+                  v-model="invoice.status"
+                  :options="statusOptions"
+                  option-label="name"
+                  option-value="id"
+                  emit-value
+                  map-options
+                  lazy-rules
+                  dense
+                  outlined
+                  filled
+                  :disable="invoiceId === 'NEW'"
+                  :rules="[val => !!val || t('required')]"
+                />
+              </div>
+            </div>
+            <div class="row text-subtitle1 text-grey-7" style="margin-top: -10px;">
+                <div class="col-xl-6 col-lg-6 col-md-5 col-sm-4 col-xs-12 q-pr-xl q-pl-md q-pt-xs" :class="locale === 'en' ? 'text-right' : 'text-left'">{{ t('date') }}:</div>
+                <div class="col-xl-6 col-lg-6 col-md-7 col-sm-8 col-xs-12">
+                  <q-input type="date" filled dense v-model="invoice.date_time_issued"
+                  :rules="[val => !!val || t('required')]" />
+                </div>
+              </div>
+              <div class="row text-subtitle1 text-grey-7" style="margin-top: -10px;">
+                <div class="col-xl-6 col-lg-6 col-md-5 col-sm-4 col-xs-12 q-pr-xl q-pl-md q-pt-xs" :class="locale === 'en' ? 'text-right' : 'text-left'">{{ t('profit') }}:</div>
+                <div class="col-xl-6 col-lg-6 col-md-7 col-sm-8 col-xs-12">
+                  <q-input type="number" filled dense v-model="invoice.profit" suffix="%"
+                  :rules="[val => !!val || t('required')]" />
+                </div>
+              </div>
+          </div>
+        </div>
+        <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12 q-mt-lg q-pt-xs"
+          :dir="getDir"
+          :style="{ order: $q.screen.lt.md || locale === 'ar' ? 1 : 2 }">
+          <div class="row text-subtitle1 text-grey-7">
+            <div class="col-xl-6 col-lg-6 col-md-5 col-sm-4 col-xs-12 q-pr-xl q-pl-md q-pt-xs" :class="locale === 'en' ? 'text-right' : 'text-left'">{{ t('code') }}:</div>
+            <div class="col-xl-6 col-lg-6 col-md-7 col-sm-8 col-xs-12">
+              <q-input filled dense v-model="invoiceId" prefix="#" disable input-style="color: red; font-weight: bold" />
+            </div>
+          </div>
 
-    <q-dialog v-model="showScanner">
-      <q-card class="q-dialog-plugin">
-        <barcode-reader @codeRead="codeRead" />
-        <q-card-actions align="right">
-          <q-btn color="primary" label="Close" @click="showScanner = false" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+          <div class="row q-mt-sm text-subtitle1 text-grey-7">
+            <div class="col-xl-6 col-lg-6 col-md-5 col-sm-4 col-xs-12 q-pr-xl q-pl-md q-pt-xs" :class="locale === 'en' ? 'text-right' : 'text-left'">
+              {{ t('customer') }}:
+            </div>
+            <div class="col-xl-6 col-lg-6 col-md-7 col-sm-8 col-xs-12">
+              <person-search
+                :listOptions="customers"
+                :default-selection="invoice.customer"
+                :isOutlined="true"
+                filled
+                :is-required="true"
+                :is-clearable="false"
+                @value-update="updateCustomer" />
 
-    <q-dialog v-model="showPrint">
-      <q-card class="q-dialog-plugin">
-        <div class="row" id="receipt">
-          <div class="col-12">
-            <q-item class="full-width rounded-borders">
-              <q-item-section>
-                <q-item-label header class="text-h6">{{ t('orderSummary') }}</q-item-label>
-              </q-item-section>
-              <q-item-section side header class="text-h6 text-black">
-                <barcode-label :value="formattedCode"></barcode-label>
-              </q-item-section>
-            </q-item>
-            <q-item class="full-width rounded-borders" style="border-bottom: 3px dotted blue; margin-top: -13px; margin-bottom: 8px;">
-              <q-item-section>
-                <table>
-                    <tr>
-                      <td>{{ t('branch') }}: </td>
-                      <td class="text-subtitle2">
-                        <b>{{ getBranch() }}</b>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>{{ t('date') }}: </td>
-                      <td class="text-subtitle2">
-                        <b>{{ order.date }}</b>
-                      </td>
-                    </tr>
-                </table>
-              </q-item-section>
-              <q-item-section side class="full-width rounded-borders text-black">
-                <table>
-                  <tr>
-                    <td>{{ t('vendor') }}: </td>
-                    <td class="text-subtitle1">
-                      <b>{{ getCustomer() }}</b>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>{{ t('type') }}: </td>
-                    <td class="text-subtitle2">
-                      <b>
-                        {{ t(order.document_type.toLowerCase()) }} - {{ t(order.document_status.toLowerCase()) }}
-                      </b>
-                    </td>
-                  </tr>
-                </table>
-              </q-item-section>
-            </q-item>
-            <q-item class="full-width" style="margin-top: -9px;" v-for="(product, index) in order.order_items" :key="index">
-              <q-item-section>
-                <q-item-label lines="1">{{ product.name }}</q-item-label>
-                <q-item-label caption>{{ product.quantity }} {{ product.unit_name }} x {{ (product.paid_amount / product.quantity).toFixed(2) }}</q-item-label>
-              </q-item-section>
-              <q-item-section side class="text-black">
-                L.E. {{ product.paid_amount.toFixed(2) }}
-              </q-item-section>
-              <q-separator></q-separator>
-            </q-item>
-            <q-separator></q-separator>
-            <q-item class="full-width" style="border-top: 3px dotted blue">
-              <q-item-section>
-                <q-item-label lines="1">Total</q-item-label>
-              </q-item-section>
-              <q-item-section side class="text-black">
-                L.E. {{ totalPrint.toFixed(2) }}
-              </q-item-section>
-            </q-item>
-            <!-- <div v-if="order.discount > 0">
-              <q-item class="full-width" style="margin-top: 0; margin-bottom: 0;">
-                <q-item-section>
-                  <q-item-label lines="1">Discount {{ order.discountType ? `${order.discount}%` : '' }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  -L.E. {{ order.discountType ? discountValue : order.discount }}
-                </q-item-section>
-              </q-item>
-              <q-item class="full-width" style="margin-top: 0; margin-bottom: 0;">
-                <q-item-section>
-                  <q-item-label lines="1">Net Total</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  L.E. {{ netTotal.toFixed(2) }}
-                </q-item-section>
-              </q-item>
-            </div> -->
-            <div v-for="(payment, index) in order.order_payments" :key="index" >
-              <q-item class="full-width" style="margin-top: -23px;"
-              v-if="(payment.currency || 0) > 0 && (payment.value || 0) > 0">
-                  <q-item-section>
-                    <q-item-label v-show="index === 0" lines="1">Paid</q-item-label>
-                  </q-item-section>
-                  <q-item-section side class="text-black">
-                    {{ getCurrencyName(payment.currency).name }}{{ payment.value }}
-                  </q-item-section>
-              </q-item>
+              <span style="display: inline-flex; margin-top: 3px;" :style="{ float: locale === 'ar' ? 'left' : 'right' }">
+                <div class="row">
+                  <q-btn icon="add" color="green" size="sm" type="button" outline round
+                    style="margin: auto;" @click="showAddCustomer(0)">
+                    <q-tooltip class="bg-accent">{{ t('addCustomer') }}</q-tooltip>
+                  </q-btn>
+                  <q-btn icon="edit" color="orange" size="sm" :disable="!invoice.customer"
+                    type="button" outline round style="margin: auto;"
+                    @click="showAddCustomer(invoice.customer)">
+                    <q-tooltip class="bg-accent">{{ t('editCustomer') }}</q-tooltip>
+                  </q-btn>
+                  <q-btn icon="delete" color="red" size="sm"
+                    :disable="!invoice.customer"
+                    @click="confirmDeleteCustomer(invoice.customer)"
+                    type="button" outline round style="margin: auto;">
+                    <q-tooltip class="bg-accent">{{ t('deleteCustomer') }}</q-tooltip>
+                  </q-btn>
+                </div>
+              </span>
             </div>
           </div>
         </div>
-        <q-card-actions align="right" class="no-print">
-          <q-btn color="green" label="Print" @click="printOrder" />
-          <q-btn color="primary" label="Close" @click="showPrint = false" />
-        </q-card-actions>
-      </q-card>
+      </q-card-section>
+
+      <q-card-section class="row q-pb-lg" style="border-bottom: 1px solid lightgrey;">
+        <q-table square class="no-shadow full-width"
+          :title="t('details')"
+          :rows="invoice.lines"
+          :columns="columns"
+          row-key="name"
+          :filter="filter"
+          :dir="getDir">
+          <template v-slot:top-right>
+            <q-input filled borderless dense debounce="300" v-model="filter" :placeholder="t('search')">
+              <template v-slot:append>
+                <q-icon name="search" />
+              </template>
+            </q-input>
+
+            <q-btn class="q-ml-sm bg-blue-2" icon="add" outline color="primary" flat
+              v-if="invoice.status === 'Quotation'"
+              @click="showAddInvoiceLineDialog(null)" />
+          </template>
+          <template v-slot:body-cell-quotation_quantity="props">
+            <q-td :props="props">
+              <q-input type="number"
+                input-style="text-align: right;"
+                @change="updateQuotationTotal(props.row)"
+                v-model="props.row.quotation_quantity"
+                dense autofocus borderless />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-quantity="props">
+            <q-td :props="props">
+              <q-input type="number"
+                input-style="text-align: right;"
+                @change="updateTotal(props.row)"
+                v-model="props.row.quantity"
+                dense autofocus borderless />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-unit_value="props">
+            <q-td :props="props">
+              <q-input type="number"
+                input-style="text-align: right;"
+                v-model="props.row.unit_value"
+                dense autofocus borderless />
+            </q-td>
+          </template>
+          <template v-slot:body-cell-sales_price="props">
+            <q-td :props="props">
+              <q-input type="number"
+                input-style="text-align: right;"
+                @change="updateTotal(props.row)"
+                v-model="props.row.sales_price"
+                dense autofocus borderless />
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-actions="props">
+            <q-td :props="props">
+              <q-btn outline round icon="edit" size="sm" text-color="blue" @click="showAddInvoiceLineDialog(props.row)" />
+              <q-btn outline round icon="delete" size="sm" text-color="orange-9" @click="deleteRow(props.row)" />
+            </q-td>
+          </template>
+        </q-table>
+      </q-card-section>
+      <q-card-section class="row q-pb-lg" style="border-bottom: 1px solid lightgrey;" :dir="getDir">
+        <div class=" q-mt-sm text-subtitle1 text-grey-7 col-12">
+          <div class="q-table__title q-mr-md text-black">{{ t('termsAndConditions') }}
+            <q-btn color="primary" round flat outlined icon="star">
+              <q-menu>
+                <q-list dense style="min-width: 100px">
+                  <q-item clickable v-close-popup v-for="condition in conditions" :key="condition.id">
+                    <q-item-section @click="addCondition(condition)">{{ condition.name}}</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
+            </q-btn>
+          </div>
+
+          <div class="col-6">
+              <q-editor v-model="invoice.conditions" :toolbar="[]" @input="ensureBulleted" />
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-card-section class="row q-pb-lg" style="border-bottom: 1px solid lightgrey;"
+        :dir="getDir" v-if="invoice.status !== 'Quotation'">
+        <div class=" q-mt-sm text-subtitle1 text-grey-7 col-12">
+          <div class="q-table__title q-mr-md text-black">{{ t('supplyOrder') }}</div>
+          <div class="col-12 q-pt-md" style="border-top: 1px solid lightgrey; text-align: center;" dir="ltr">
+
+
+            <q-btn :label="t('upload')" type="button" class="text-capitalize" rounded color="blue"
+              icon="cloud"
+              outline
+              @click="browsePdf"
+              style="max-width: 150px; margin: 3px;" />
+              <q-btn :label="t('open')" type="button" class="text-capitalize" rounded color="green"
+                outline
+                icon="visibility"
+                :disable="!invoice.supply_order"
+                :href="invoice.supply_order" target="_blank"
+                style="max-width: 150px; margin: 3px;" />
+            <input type="file" ref="fileInput" @change="onFileChange" accept="application/pdf" style="display: none;" >
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-card-section class="row q-pb-lg" style="border-bottom: 1px solid lightgrey;">
+
+        <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12"
+          :style="locale === 'en' ? 'margin-left: auto' : 'margin-right: auto'" :dir="getDir">
+          <div class="text-subtitle1 text-grey-7">
+            <div class="row q-mt-sm text-subtitle1 text-grey-7">
+              <div class="col-6 text-right q-pr-xl q-pt-xs">{{ t('netTotal') }}:</div>
+              <div class="col-6">
+                <q-input v-if="invoice.status === 'Quotation' || invoice.status === 'Canceled'" filled dense v-model="quotationNetTotal" readonly :rules="[val => !!val || t('required')]" />
+                <q-input v-else filled dense v-model="netTotal" readonly :rules="[val => !!val || t('required')]" />
+              </div>
+            </div>
+            <div class="row q-mt-sm text-subtitle1 text-grey-7">
+              <div class="col-6 text-right q-pr-xl q-pt-xs">{{ t('tax') }}:</div>
+              <div class="col-6">
+                <q-select
+                  v-model="invoice.tax"
+                  :options="taxOptions"
+                  option-label="name"
+                  option-value="id"
+                  emit-value
+                  map-options
+                  lazy-rules
+                  dense
+                  outlined
+                  filled
+                  :rules="[val => !!val || t('required')]"
+                />
+              </div>
+            </div>
+            <div class="row q-mt-sm text-subtitle1 text-grey-7">
+              <div class="col-6 text-right q-pr-xl q-pt-xs">{{ t('taxValue') }}:</div>
+              <div class="col-6">
+                <q-input type="number" filled dense v-model="invoice.tax_amount" suffix="%"
+                :rules="[val => !!val || t('required')]" />
+              </div>
+            </div>
+            <div class="row q-mt-sm text-subtitle1 text-grey-7">
+              <div class="col-6 text-right q-pr-xl q-pt-xs">{{ t('totalValue') }}:</div>
+              <div class="col-6">
+                <q-input v-if="invoice.status === 'Quotation' || invoice.status === 'Canceled'" type="number" filled dense v-model="quotationTotalValue" readonly />
+                <q-input v-else type="number" filled dense v-model="totalValue" readonly />
+              </div>
+            </div>
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-card-actions align="left">
+        <q-btn class="text-capitalize text-white"
+          type="button"
+          color="red"
+          icon="close"
+          style="min-width: 130px;"
+          :label="t('close')" @click="handleClose(false);">
+        </q-btn>
+        <q-btn class="text-capitalize text-white"
+          type="submit"
+          color="green"
+          :loading="loading"
+          style="min-width: 130px;"
+          icon="save"
+          :label="t('save')">
+          <template v-slot:loading>
+            <q-spinner-facebook />
+          </template>
+        </q-btn>
+      </q-card-actions>
+
+    </q-form>
+
+    <q-dialog v-model="showCustomerDialog">
+      <customer-dialog :customerId="customerToEdit" @closeMeEvent="handleCloseDialog"></customer-dialog>
+    </q-dialog>
+    <q-dialog v-model="showInvoiceLineDialog">
+      <invoice-line
+        :index="invoiceLineToEdit.index"
+        :vendor="invoiceLineToEdit.vendor"
+        :description="invoiceLineToEdit.description"
+        :unit_type="invoiceLineToEdit.unit_type"
+        :quotation_quantity="invoiceLineToEdit.quotation_quantity"
+        :unit_value="invoiceLineToEdit.unit_value"
+        :sales_price="invoiceLineToEdit.sales_price"
+        :margin="invoiceLineToEdit.margin"
+        :product="invoiceLineToEdit.product"
+        @close-me-event="closeInvoiceLine"
+      />
     </q-dialog>
   </q-page>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, defineAsyncComponent } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
-const { t, locale } = useI18n();
-import { useBranchStore } from 'src/stores/branch-store';
 import { useCustomerStore } from 'src/stores/customer-store';
+import { useVendorStore } from 'src/stores/vendor-store';
+import { useOrderStore } from 'src/stores/order-store';
 import { useProductStore } from 'src/stores/product-store';
 import { useUnitStore } from 'src/stores/unit-store';
-import { useCurrencyStore } from 'src/stores/currency-store';
-import { useOrderStore } from 'src/stores/order-store';
-import { useAuthStore } from 'src/stores/auth-store';
+import { useReportStore } from 'src/stores/report-store';
 import { getToday } from 'src/utils/dateUtils';
-const pagination = ref({
-  rowsPerPage: 0,
-});
+import { getReport } from 'src/utils/reportUtils';
+
+const { t, locale } = useI18n();
 const $q = useQuasar();
-const ProductItem = defineAsyncComponent(() => import('components/ProductItem.vue'));
-const UserDetailItem = defineAsyncComponent(() => import('components/UserDetailItem.vue'));
-const CurrencyIndicator = defineAsyncComponent(() => import('components/CurrencyIndicator.vue'));
-const BarcodeLabel = defineAsyncComponent(() => import('src/components/BarcodeLabelSingle.vue'));
-const BarcodeReader = defineAsyncComponent(() => import('components/BarcodeReader.vue'));
-const PersonSearch = defineAsyncComponent(() => import('components/PersonSearch.vue'));
-const ProductSearch = defineAsyncComponent(() => import('components/ProductSearch.vue'));
-
-const branchStore = useBranchStore();
-const customerStore = useCustomerStore();
-const productStore = useProductStore();
-const unitStore = useUnitStore();
-const currencyStore = useCurrencyStore();
-const orderStore = useOrderStore();
-const authStore = useAuthStore();
-const search = ref('');
 const loading = ref(false);
-const showScanner = ref(false);
-const codeReading = ref(false);
-const codeRead = async(code) => {
-  if (codeReading.value) return;
-  codeReading.value = true;
-  productCode.value = code;
-  await handleEnter();
-  codeReading.value = false;
-};
-
+const router = useRouter();
 const route = useRoute();
 
-const userBranches = computed({
+const customerStore = useCustomerStore();
+const vendorStore = useVendorStore();
+const orderStore = useOrderStore();
+const productStore = useProductStore();
+const unitStore = useUnitStore();
+const reportStore = useReportStore();
+
+const PersonSearch = defineAsyncComponent(() => import('components/PersonSearch.vue'));
+const CustomerDialog = defineAsyncComponent(() => import('components/CustomerDialog.vue'));
+const InvoiceLine = defineAsyncComponent(() => import('components/InvoiceLine.vue'));
+
+const invoiceId = computed({
   get: () => {
-    const branches = branchStore.getBranches;
-    const validBranches = branchStore.getUserBranches.map((ub) => ub.branch);
-    return branches.filter((b) => validBranches.includes(b.id));
+    return route.params.invoiceNumber.toUpperCase();
   },
+  set: (newValue) => {
+    router.push(`/sales/${newValue}`);
+  }
 });
 
 const customers = computed({
-  get: () => customerStore.getCustomersShort || [],
-});
-
-const units = computed({
-  get: () => unitStore.getUnits || [],
-});
-
-const docTypes = ref([
-  { id: 'Invoice', name: t('invoice') },
-  { id: 'Return', name: t('return') },
-]);
-
-const docStatus = ref([
-  { id: 'Active', name: t('active') },
-  { id: 'Hold', name: t('hold') },
-  { id: 'Canceled', name: t('canceled') },
-  { id: 'Depreciation', name: t('depreciation')},
-]);
-
-const order = ref({
-  id: null,
-  branch: localStorage.getItem('selectedBranch') ? parseInt(localStorage.getItem('selectedBranch'), 10) : null,
-  customer: null,
-  document_type: 'Invoice',
-  document_status: 'Active',
-  internal_code: null,
-  date: getToday(),
-  order_items: [],
-  order_payments: [],
-  discount: 0,
-  discountType: false,
-  discount_type: 'Percent',
-});
-
-const loadProducts = async() => {
-  loading.value = true;
-  await productStore.listShortProducts();
-  loading.value = false;
-};
-
-const productList = computed({
   get: () => {
-    const activeList = productStore.getProductsShort.filter((p) => p.is_active) || [];
-    if (!search.value) return activeList;
-    const searchText = search.value.toLowerCase();
-    return activeList.filter((p) => p.code.toLowerCase().includes(searchText)
-      || p.name.toLowerCase().includes(searchText));
-
-    return activeList;
+    return customerStore.getCustomersShort;
   },
 });
 
-const selectProduct = async(productId) => {
-  loading.value = true;
-  await productStore.retrieveProduct(productId);
-  itemToAdd.value.quantity = 1;
-  itemToAdd.value.productUnit = selectedProduct.value?.unit;
-  priceOptions.value = selectedProduct.value.prices;
-  itemToAdd.value.unit_price = selectedProduct.value.price;
-  loading.value = false;
+const vendors = computed({
+  get: () => {
+    return vendorStore.getVendorsShort;
+  },
+});
+
+const showConditionsMenu = ref(false);
+
+const handleClose = () => {
+  $q.dialog({
+    title: t('confirm'),
+    message: t('confirmClose'),
+    cancel: true,
+    persistent: false,
+  }).onOk(() => {
+    router.push('/sales');
+  });
 };
+
+const invoice = ref({
+  id: null,
+  status: 'Quotation',
+  customer: null,
+  date_time_issued: getToday().replaceAll('/', '-'),
+  supply_order: null,
+  conditions: '<ul></ul>',
+  tax: null,
+  tax_amount: null,
+  profit: null,
+  lines: [],
+  quotation_net_amount: null,
+  quotation_total_amount: null,
+  net_amount: null,
+  total_amount: null,
+});
+
+const conditions = computed({
+  get: () => {
+    return orderStore.getConditions;
+  },
+});
 
 onMounted(async() => {
-  await currencyStore.listCurrency();
-  loadProducts();
-  order.value.order_payments = currency.value.map((c) => ({
-    id: null,
-    currency: c.id,
-    label: c.name,
-    value: null,
-  }));
-
-  const invoiceNumber = route.params.invoiceNumber;
-  if (invoiceNumber) {
-    searchInvoice.value = invoiceNumber;
-    await findInvoice();
+  console.log(invoiceId.value);
+  orderStore.listConditions();
+  if (invoiceId.value !== 'NEW') {
+    await orderStore.retrieveOrder(invoiceId.value);
+    await customerStore.listShortCustomers();
+    const currentInvoice = orderStore.getCurrentOrder;
+    invoice.value.id = currentInvoice.id;
+    invoice.value.status = currentInvoice.status;
+    invoice.value.customer = currentInvoice.customer;
+    invoice.value.date_time_issued = currentInvoice.date_time_issued.split('T')[0].replaceAll('/', '-');
+    invoice.value.supply_order = currentInvoice.supply_order;
+    invoice.value.conditions = currentInvoice.conditions;
+    invoice.value.tax = currentInvoice.tax;
+    invoice.value.tax_amount = parseFloat(currentInvoice.tax_amount);
+    invoice.value.profit = parseFloat(currentInvoice.profit);
+    invoice.value.quotation_net_amount = parseFloat(currentInvoice.quotation_net_amount);
+    invoice.value.quotation_total_amount = parseFloat(currentInvoice.quotation_total_amount);
+    invoice.value.net_amount = parseFloat(currentInvoice.net_amount);
+    invoice.value.total_amount = parseFloat(currentInvoice.total_amount);
+    await productStore.listProducts();
+    await vendorStore.listShortVendors();
+    await unitStore.listUnits();
+    const productList = productStore.getProducts;
+    const unitList = unitStore.getUnits;
+    invoice.value.lines = currentInvoice.lines.map((l, index) => ({
+      index,
+      id: l.id,
+      vendor: (() => {
+        const vendor = vendors.value.find((v) => v.id === l.vendor);
+        return vendor ? { id: vendor.id, name: vendor.name } : null;
+      })(),
+      product: (() => {
+        const product = productList.find((p) => p.id === l.product);
+        return product ? { id: product.id, name: product.name } : null;
+      })(),
+      description: { id: l.description, name: l.description_name },
+      quantity: parseFloat(l.quantity),
+      quotation_quantity: parseFloat(l.quotation_quantity),
+      unit_type: unitList.find((u) => u.id === l.unit_type),
+      unit_value: parseFloat(l.unit_value),
+      margin: parseFloat(l.margin),
+      sales_price: parseFloat(l.sales_price),
+      total_value: parseFloat(l.total_value),
+      quotation_total_value: parseFloat(l.quotation_total_value),
+    }));
   }
 
 });
 
-
-const selectedProduct = computed({
-  get: () => productStore.getCurrentProduct,
-});
-
-
-const getImage = (product) => {
-  if (product?.id > 0) {
-    if (product.image) {
-      if (product.image.includes('http')) {
-        return product.image;
-      } else {
-        return `${process.env.API_BASE_URL}${product.image}`;
-      }
-    }
+const getIcon = (status) => {
+  switch (status) {
+    case 'Quotation':
+      return 'local_offer';
+    case 'Canceled':
+      return 'not_interested';
+    case 'Invoice':
+      return 'description';
+    case 'Closed':
+      return 'lock';
+    default:
+      return 'help';
   }
-  return '/media/product-logo.png';
 };
 
-const productUnits = computed({
-  get: () => {
-    if (!selectedProduct.value?.id > 0) return [];
-    const result = [];
-    const basicUnit = units.value.find((u) => u.id === selectedProduct.value.unit);
-    result.push({
-      id: basicUnit.id,
-      name: basicUnit.name,
-      value: 1,
-    });
+const getColor = (status) => {
+  switch (status) {
+    case 'Quotation':
+      return 'blue';
+    case 'Canceled':
+      return 'red';
+    case 'Invoice':
+      return 'green';
+    case 'Closed':
+      return 'grey';
+    default:
+      return 'black';
+  }
+};
 
-    selectedProduct.value?.additional_units?.forEach((au) => {
-      const additionalUnit = units.value.find((u) => u.id === au.unit);
-      result.push({
-        id: au.unit,
-        name: additionalUnit.name,
-        value: au.value,
+const updateCustomer = (customerName) => {
+  invoice.value.customer = customerName?.id;
+}
+
+const columns = computed(() => [
+  {
+    name: 'product',
+    label: t('product'),
+    align: locale.value === 'en' ? 'left' : 'right',
+    field: row => row.product.name,
+    format: val => `${val}`,
+    sortable: true
+  },
+  {
+    name: 'description',
+    label: t('description'),
+    align: locale.value === 'en' ? 'left' : 'right',
+    field: row => row.description.name,
+    format: val => `${val}`,
+    sortable: true
+  },
+  {
+    name: invoice.value.status === 'Quotation' || invoice.value.status === 'Canceled' ? 'quotation_quantity' : 'quantity',
+    label: t('quantity'),
+    align: 'right',
+    field: row => invoice.value.status === 'Quotation' || invoice.value.status === 'Canceled' ? row.quotation_quantity : row.quantity,
+    format: val => `${val}`,
+    sortable: true
+  },
+  {
+    name: 'unit',
+    label: t('unit'),
+    align: locale.value === 'en' ? 'left' : 'right',
+    field: row => row.unit_type.description,
+    format: val => `${val}`,
+    sortable: true
+  },
+  {
+    name: 'vendor',
+    label: t('vendor'),
+    align: locale.value === 'en' ? 'left' : 'right',
+    field: row => row.vendor.name,
+    format: val => `${val}`,
+    sortable: true
+  },
+  {
+    name: 'unit_value',
+    label: t('costPrice'),
+    align: 'right',
+    field: row => row.unit_value,
+    format: val => `${val}`,
+    sortable: true
+  },
+  {
+    name: 'sales_price',
+    label: t('salesPrice'),
+    align: 'right',
+    field: row => row.sales_price,
+    format: val => `${val}`,
+    sortable: true
+  },
+  {
+    name: invoice.value.status === 'Quotation' || invoice.value.status === 'Canceled' ? 'quotation_total_value' : 'total_value',
+    label: t('total'),
+    align: 'right',
+    field: row => invoice.value.status === 'Quotation' || invoice.value.status === 'Canceled' ? row.quotation_total_value : row.total_value,
+    format: val => `${val}`,
+    sortable: true
+  },
+  ...(invoice.value.status !== 'Quotation' ? [] : [
+    {
+      name: 'actions',
+      label: ' ',
+      align: 'center',
+      field: 'actions',
+      sortable: false
+    }
+  ]),
+]);
+
+const filter = ref('');
+
+const deleteRow = (row) => {
+
+  $q.dialog({
+    title: t('confirm'),
+    message: t('confirmDeleteRow'),
+    cancel: true,
+    persistent: false,
+  }).onOk(() => {
+    invoice.value.lines = invoice.value.lines.filter(item => item !== row);
+  });
+};
+
+const showCustomerDialog = ref(false);
+const customerToEdit = ref(0);
+const showAddCustomer = async (customerId) => {
+  customerToEdit.value = customerId;
+  await customerStore.retrieveCustomer(customerId);
+  showCustomerDialog.value = true;
+};
+
+const confirmDeleteCustomer = (customerId) => {
+  $q.dialog({
+    title: t('confirm'),
+    message: t('confirmDeleteCustomer'),
+    cancel: true,
+    persistent: false,
+  }).onOk(async () => {
+    try {
+      loading.value = true;
+      await customerStore.deleteCustomer(customerId);
+      await customerStore.listShortCustomers();
+      invoice.value.customer = null;
+      loading.value = false;
+      $q.notify({
+        type: 'positive',
+        position: 'top-right',
+        message: t('deleteSucceeded'),
+        progress: true,
+        actions: [
+          { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
+        ],
       });
-    });
-    return result;
-  },
-});
-
-
-const itemToAdd = ref({
-  quantity: 1,
-  unit_value: 0,
-  unit_price: null,
-  productUnit: null,
-});
-
-const handleInput = () => {
-  if (productList.value.length === 1) {
-    selectProduct(productList.value[0].id);
-  } else if (productList.value.length > 1) {
-    const searchText = search.value.toLowerCase();
-    const foundProduct = productList.value.find((p) => p.code.toLowerCase() === searchText
-      || p.name.toLowerCase() === searchText);
-    if (foundProduct) {
-      selectProduct(foundProduct.id);
+    } catch (error) {
+      if (error.status === 403) return;
+      console.error(error);
+      $q.notify({
+        type: 'positive',
+        position: 'top-right',
+        message: t('failedToDelete'),
+        progress: true,
+        actions: [
+          { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
+        ],
+      });
     }
-  }
+  });
 };
 
-const productValue = computed({
-  get: () => {
-    let value = 0;
-    if (selectedProduct.value?.id > 0) {
-      const selectedUnit = productUnits.value.find((u) => u.id === itemToAdd.value.productUnit);
-      const calc = itemToAdd.value.quantity * itemToAdd.value.unit_price * (selectedUnit?.value || 1);
-      value = calc;
-    }
-    return value;
-  }
-});
-
-const getProductValue = (product) => {
-  return product;
-};
-
-const grossTotal = computed({
-  get: () => {
-    const gross = order.value.order_items.reduce((total, item) => total + item.gross, 0);
-    return gross;
-  }
-});
-
-const netTotal = computed({
-  get: () => {
-    const gross = grossTotal.value;
-    const discountAmount = discountValue.value;
-    const netAmount = gross - discountAmount;
-    return netAmount;
-  }
-});
-
-const totalPrint = computed({
-  get: () => {
-    const result = order.value.order_items.reduce((total, item) => total + item.paid_amount, 0);
-    return result;
-  },
-});
-
-const discountValue = computed({
-  get: () => {
-    const gross = grossTotal.value;
-    const discountAmount = order.value.discountType ? (gross * (order.value.discount || 0) / 100) : (order.value.discount || 0);
-    if (discountAmount > 0) {
-      return discountAmount;
-    }
-    return '0.00';
-  }
-});
-
-const restTotal = computed({
-  get: () => {
-    let result = netTotal.value;
-    order.value.order_payments.forEach((p) => {
-      if (p.currency) {
-        const selectedCurrency = currency.value.find((c) => c.id === p.currency);
-        const paidAmount = selectedCurrency.rate * p.value;
-        result -= paidAmount;
-      }
-    });
-    return result;
-  },
-});
-
-const checkQuantity = async() => {
-  const productInfo = {
-    product: selectedProduct.value.id,
-    branch: order.value.branch,
+const handleCloseDialog = async (isSaved) => {
+  showCustomerDialog.value = false;
+  if (isSaved) {
+    await customerStore.listShortCustomers();
+    invoice.value.customer = null;
   };
-  const response = await productStore.retrieveQuantity(productInfo);
-  const productQuantity = response.quantity;
-  const minQuantity = response.min_quantity;
-  if (productQuantity <= 0) {
-    $q.notify({
-      progress: true,
-      type: 'negative',
-      position: 'bottom',
-      message: t('outOfStock'),
-      progress: true,
-      actions: [
-        { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-      ],
-    });
-  } else if (productQuantity <= minQuantity) {
-    $q.notify({
-      progress: true,
-      type: 'warning',
-      position: 'bottom',
-      message: t('minQuantityAlarm'),
-      progress: true,
-      actions: [
-        { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-      ],
-    });
+};
+
+const updateTotal = (rowInfo) => {
+  rowInfo.total_value = (rowInfo.quantity * rowInfo.sales_price).toFixed(0);
+};
+
+const updateQuotationTotal = (rowInfo) => {
+  rowInfo.quotation_total_value = (rowInfo.quotation_quantity * rowInfo.sales_price).toFixed(0);
+};
+
+const invoiceLineToEdit = ref(null);
+const showAddInvoiceLineDialog = async(selectedLine) => {
+  if (selectedLine === null) {
+    invoiceLineToEdit.value = {
+      index: -1,
+      vendor: null,
+      product: null,
+      description: null,
+      unit_type: null,
+      quotation_quantity: null,
+      quantity: null,
+      unit_value: null,
+      margin: parseFloat(invoice.value.profit),
+      sales_price: null,
+      quotation_total_value: null,
+      total_value: null,
+    };
   } else {
-    $q.notify({
-      progress: true,
-      type: 'info',
-      position: 'bottom',
-      message: `${t('balance')}: ${productQuantity}`,
-      progress: true,
-      actions: [
-        { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-      ],
-    });
+    await productStore.retrieveProduct(selectedLine.product.id);
+    invoiceLineToEdit.value = {
+      index: selectedLine.index,
+      vendor: selectedLine.vendor.id,
+      product: selectedLine.product.id,
+      description: selectedLine.description.id,
+      unit_type: selectedLine.unit_type.id,
+      quantity: parseFloat(selectedLine.quotation_quantity),
+      quotation_quantity: parseFloat(selectedLine.quotation_quantity),
+      unit_value: parseFloat(selectedLine.unit_value),
+      margin: parseFloat(selectedLine.margin),
+      sales_price: parseFloat(selectedLine.sales_price),
+      total_value: parseFloat(selectedLine.quotation_total_value),
+      quotation_total_value: parseFloat(selectedLine.quotation_total_value),
+    };
+  }
+  console.log('invoiceLineToEdit', invoiceLineToEdit.value);
+  showInvoiceLineDialog.value = true;
+};
+
+const showInvoiceLineDialog = ref(false);
+const closeInvoiceLine = (lineInfo) => {
+  if (lineInfo.isSaved) {
+    const newLine = lineInfo.output;
+    if (newLine.index === -1) {
+      newLine.index = invoice.value.lines.length;
+      invoice.value.lines.push(newLine);
+      console.log('newLine', newLine);
+    } else {
+      invoice.value.lines[newLine.index] = newLine;
+      console.log('lineInfo', newLine.index, newLine, invoice.value.lines);
+    }
+
+  }
+  showInvoiceLineDialog.value = false;
+};
+
+const statusOptions = computed(() => [
+  { id: 'Quotation', name: t('quotation') },
+  { id: 'Canceled', name: t('canceled') },
+  { id: 'Invoice', name: t('invoice') },
+  { id: 'Closed', name: t('closed') },
+]);
+
+
+const ensureBulleted = () => {
+  if (!invoice.value.conditions?.startsWith('<ul>')) {
+    invoice.value.conditions = `<ul><li>${invoice.value.conditions.replace(/\n/g, '</li><li>')}</li></ul>`;
   }
 };
 
-const addProduct = async() => {
+const taxOptions = computed(() => [
+  { id: 'T1', name: t('taxAddedValue') },
+  { id: 'T2', name: t('tableTax')},
+]);
 
-  // check if the product exists previously
-  let foundProduct = false;
-  order.value.order_items.forEach((p) => {
-    if (p.id === selectedProduct.value.id && p.unit === itemToAdd.value.productUnit
-      && p.unit_price === itemToAdd.value.unit_price) {
-        foundProduct = true;
-        p.quantity += itemToAdd.value.quantity;
-        p.gross += productValue.value;
-      }
-  });
-
-  if (!foundProduct) {
-    checkQuantity();
-    order.value.order_items.push({
-      id: selectedProduct.value.id,
-      product: selectedProduct.value.id,
-      name: selectedProduct.value.name,
-      quantity: itemToAdd.value.quantity,
-      unit: itemToAdd.value.productUnit,
-      unit_price: itemToAdd.value.unit_price,
-      unit_name: units.value.find((u) => u.id === itemToAdd.value.productUnit).name,
-      unit_value: productUnits.value.find((u) => u.id === itemToAdd.value.productUnit).value,
-      image: getImage(selectedProduct.value),
-      gross: productValue.value,
-    });
-  }
-
-  itemToAdd.value.quantity = 1;
-  itemToAdd.value.unit_value = 1;
-  itemToAdd.value.productUnit = null;
-  search.value = null;
-  selectProduct(0);
-  scrollToEnd();
-};
-
-const scrollToEnd = () => {
-  setTimeout(() => {
-    const tableElement = document.getElementById('orderTable');
-    if (tableElement) {
-      tableElement.scrollTop = tableElement.scrollHeight + 170;
-    }
-  }, 1000);
-};
-
-const removeProduct = (itemId) => {
-  let itemIndex = -1;
-  let counter = 0;
-  order.value.order_items.forEach((o) => {
-    if (o.id === itemId) {
-      itemIndex = counter;
-    }
-    counter += 1;
-  });
-  order.value.order_items.splice(itemIndex, 1);
-};
-
-const currency = computed({
-  get: () => { return currencyStore.getCurrency },
+const netTotal = computed(() => {
+  return invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.total_value || 0), 0);
 });
 
-const addPayment = () => {
-  order.value.order_payments.push({
-    id: null,
-    currency: null,
-    value: null,
-  });
-};
-
-const getCurrencyName = (currencyId) => {
-  if (currencyId > 0) {
-    return currency.value.find((c) => c.id === currencyId);
-  }
-  return '';
-};
-
-const removePayment = (index) => {
-  order.value.order_payments.splice(index, 1);
-};
-
-const searchInvoice = ref('');
-const disableNext = computed({
-  get: () => {
-    const result = order.value.branch === null;
-    return result;
-  }
+const totalValue = computed(() => {
+  return (netTotal.value * (1 + (invoice.value.tax_amount / 100))).toFixed(0);
 });
-const userConfirm = ref(false);
-const validOrder = () => {
-  if (order.value.order_items.length === 0) {
-    $q.notify({
-      type: 'negative',
-      position: 'top-right',
-      message: t('noItems'),
-      progress: true,
-      actions: [
-        { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-      ],
-    });
-    return false;
-  }
-  const restAmount = restTotal.value;
-  if (order.value.document_status === 'Depreciation') return true;
-  if (restAmount <= 10 && order.value.order_payments.length > 0) return true;
-  if (!order.value.customer > 0) {
-    $q.notify({
-      type: 'negative',
-      position: 'top-right',
-      message: t('invalidPayment'),
-      progress: true,
-      actions: [
-        { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-      ],
-    });
-    return false;
-  } else {
-    if (userConfirm.value) return true;
-    $q.dialog({
-      title: t('onfirm'),
-      message: t('confirmCreditInvoice'),
-      cancel: true,
-      persistent: false,
-    }).onOk(async() => {
-      userConfirm.value = true;
-      saveOrder();
-    });
-  }
-  return false;
-};
 
-const saveOrder = async() => {
-  if (loading.value) return;
-  if (!order.value.branch > 0) {
+const quotationNetTotal = computed(() => {
+  return invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_total_value || 0), 0);
+});
+
+const quotationTotalValue = computed(() => {
+  return (quotationNetTotal.value * (1 + (invoice.value.tax_amount / 100))).toFixed(0);
+});
+
+const saveData = async() => {
+  if (invoice.value.lines.length === 0) {
     $q.notify({
       type: 'negative',
       position: 'top-right',
-      message: t('missingBranch'),
+      message: t('atLeastOneLineRequired'),
       progress: true,
       actions: [
         { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
@@ -877,443 +719,96 @@ const saveOrder = async() => {
     });
     return;
   }
-  if (!validOrder()) return;
+
+  // Proceed with saving data
   loading.value = true;
-  userConfirm.value = false;
-  order.value['discount_type'] = order.value.discountType ? 'Percent' : 'Value';
-  const newOrderPayments = [];
-  order.value.order_payments.forEach((p) => {
-    if (p.currency !== null && p.value !== null && p.value !== '') {
-      newOrderPayments.push(p);
-    }
-  });
-  newOrderPayments.forEach((p) => {
-    const selectedCurrency = getCurrencyName(p.currency);
-    p.exchange_rate = selectedCurrency.rate;
-    p.payment_type = 'Payment';
-    p.customer = order.value.customer;
-  });
-  const orderInfo = { ...order.value };
-  orderInfo.order_payments = newOrderPayments;
-
-  try {
-    if (order.value.id > 0) {
-      orderInfo.date = orderInfo.date.replaceAll('/', '-');
-      const response = await orderStore.editOrder(orderInfo);
-      order.value.order_items = response.order_items.map((p) => ({
-        id: p.id,
-        product: p.product,
-        name: productList.value.find((i) => i.id === p.product).name,
-        quantity: p.quantity,
-        unit: p.unit,
-        unit_price: p.unit_price,
-        unit_name: units.value.find((u) => u.id === p.unit).name,
-        image: getImage(productList.value.find((i) => i.id === p.product)),
-        unit_value: p.unit_value,
-        gross: parseFloat(p.total_amount),
-        paid_amount: parseFloat(p.paid_amount),
-      }));
-    } else {
-      if (!isAdmin.value) orderInfo.date = getToday();
-      orderInfo.date = orderInfo.date.replaceAll('/', '-');
-      const response = await orderStore.postOrder(orderInfo);
-      order.value.id = response.order.id;
-      localStorage.setItem('selectedBranch', order.value.branch);
-      order.value.order_items = response.order_items.map((p) => ({
-        id: p.id,
-        product: p.product,
-        name: productList.value.find((i) => i.id === p.product).name,
-        quantity: p.quantity,
-        unit: p.unit,
-        unit_price: p.unit_price,
-        unit_name: units.value.find((u) => u.id === p.unit).name,
-        image: getImage(productList.value.find((i) => i.id === p.product)),
-        unit_value: p.unit_value,
-        gross: parseFloat(p.total_amount),
-        paid_amount: parseFloat(p.paid_amount),
-      }));
-    }
-    $q.notify({
-      type: 'positive',
-      position: 'top-right',
-      message: `${t('orderSaved')} (${order.value.id})`,
-      progress: true,
-      actions: [
-        { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-      ],
-    });
-    reset();
-  } catch(error) {
-    if (error.status === 406) {
-      const outOfStockItems = error.response.data.data.map((p) => `
-        <tr>
-          <td>${p.code}</td>
-          <td>${p.name}</td>
-          <td>${p.requested}</td>
-          <td>${p.stock}</td>
-        </tr>
-      `);
-      const errorMessage = `
-      <p>${t('outOfStock')}</p>
-      <table>
-        <tr>
-          <th>${t('code')}</th>
-          <th>${t('name')}</th>
-          <th>${t('requested')}</th>
-          <th>${t('available')}</th>
-        </tr>
-        ${outOfStockItems.join('\n')}
-      </table>
-      `;
-      $q.notify({
-        type: 'negative',
-        color: 'purple',
-        position: 'top-right',
-        message: errorMessage,
-        caption: t('saveFailed'),
-        html: true,
-        progress: true,
-        actions: [
-          { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-        ],
-      });
-    } else if (error.status !== 403) {
-      $q.notify({
-        type: 'negative',
-        position: 'top-right',
-        message: t('saveFailed'),
-        progress: true,
-        actions: [
-          { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-        ],
-      });
-    }
-
-    console.error(error);
-  } finally {
-    loading.value = false;
-  }
-};
-const invoiceNotFound = ref(false);
-const findInvoice = async() => {
-  const searchId = parseInt(searchInvoice.value, 10);
-
-  try {
-    const response = await orderStore.retrieveOrder(searchId);
-    order.value.id = response.id;
-    order.value.date = response.date;
-    order.value.branch = response.branch;
-    order.value.customer = response.customer;
-    order.value.document_type = response.document_type;
-    order.value.document_status = response.document_status;
-    order.value.internal_code = response.internal_code;
-    order.value.discountType = (response.discount_type !== 'Value');
-    order.value.discount = response.discount;
-    order.value.order_items = response.order_items.map((p) => ({
-      id: p.id,
-      product: p.product,
-      name: productList.value.find((i) => i.id === p.product).name,
-      quantity: p.quantity,
-      unit: p.unit,
-      unit_price: p.unit_price,
-      unit_name: units.value.find((u) => u.id === p.unit).name,
-      image: getImage(productList.value.find((i) => i.id === p.product)),
-      unit_value: p.unit_value,
-      gross: parseFloat(p.total_amount),
-      paid_amount: parseFloat(p.paid_amount),
-    }));
-    order.value.order_payments = [];
-    currency.value.forEach((c) => {
-      const payment = response.order_payments.find((p) => p.currency === c.id);
-      if (payment) {
-        order.value.order_payments.push({
-          id: payment.id,
-          currency: c.id,
-          label: c.name,
-          value: payment.value,
-        });
-      } else {
-        order.value.order_payments.push({
-          id: null,
-          currency: c.id,
-          label: c.name,
-          value: null,
-        });
-      }
-    });
-    invoiceNotFound.value = false;
-  } catch (error) {
-    if (error.status !== 403) {
-      invoiceNotFound.value = true;
-    }
-    console.error('not found error', error);
-  }
-};
-
-const productSearchRef = ref();
-const reset = () => {
-  loading.value = false;
-  searchInvoice.value = null;
-  order.value = {
-    id: null,
-    branch: localStorage.getItem('selectedBranch') ? parseInt(localStorage.getItem('selectedBranch'), 10) : null,
-    customer: null,
-    document_type: 'Invoice',
-    document_status: 'Active',
-    internal_code: null,
-    date: getToday(),
-    order_items: [],
-    order_payments: currency.value.map((c) => ({
-      id: null,
-      currency: c.id,
-      label: c.name,
-      value: null,
+  // Your save logic here
+  ensureBulleted();
+  const dataToSave = {
+    id: invoiceId.value,
+    status: invoice.value.status,
+    customer: invoice.value.customer,
+    date_time_issued: invoice.value.date_time_issued,
+    conditions: invoice.value.conditions,
+    net_amount: netTotal.value,
+    quotation_net_amount: quotationNetTotal.value,
+    tax: invoice.value.tax,
+    tax_amount: invoice.value.tax_amount,
+    quotation_total_amount: quotationTotalValue.value,
+    total_amount: totalValue.value,
+    profit: invoice.value.profit,
+    lines: invoice.value.lines.map((l) => ({
+      vendor: l.vendor?.id || null,
+      product: l.product?.id || null,
+      description: l.description?.id || null,
+      unit_type: l.unit_type?.id || null,
+      quantity: l.quantity || 0,
+      quotation_quantity: l.quotation_quantity || 0,
+      unit_value: l.unit_value || 0,
+      margin: l.margin || 0,
+      sales_price: l.sales_price || 0,
+      quotation_total_value: l.quotation_total_value || 0,
+      total_value: l.total_value || 0,
     })),
-    discount: 0,
-    discountType: false,
-    discount_type: 'Percent',
   };
-  route.push('/sales');
-  productSearchRef.value.focusSearch();
-};
 
-
-// Define the createValue function
-const createValue = (val, done) => {
-  if (val > 0) {
-
-    if (val !== null && val !== '') {
-      const numberVal = Number(val);
-      if (!isNaN(numberVal)) {
-        done(numberVal, 'add-unique')
-      } else {
-        // Optionally, you can handle invalid input here
-        console.error('Invalid input, must be a number')
-      }
-    }
+  if (invoiceId.value === 'NEW') {
+    const response = await orderStore.postOrder(dataToSave);
+    invoiceId.value = response.quotation.id;
+  } else {
+    await orderStore.editOrder(dataToSave);
   }
-}
-
-// Define the filterFn function
-const priceOptions = ref([]);
-
-const filterFn = (val, update) => {
-  update(() => {
-    if (selectedProduct.value) {
-      if (val === '') {
-        priceOptions.value = selectedProduct?.value?.prices || [];
-      } else {
-        const needle = val.toLowerCase()
-        priceOptions.value = selectedProduct?.value?.prices.filter(v => v.toLowerCase().includes(needle))
-      }
-    }
+  console.log(invoiceId.value);
+  loading.value = false;
+  $q.notify({
+    type: 'positive',
+    position: 'top-right',
+    message: t('orderSaved'),
+    progress: true,
+    actions: [
+      { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
+    ],
   });
 };
 
-const formattedCode = computed({
-  get: () => {
-    return order.value.id > 0 ? order.value.id.toString().padStart(6, '0') : 'NEW';
-  },
-});
+const getDir = computed(() => locale.value === 'ar' ? 'rtl' : 'ltr');
 
-const preventArrowKeys = (event) => {
-  if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-    event.preventDefault();
+const uploadSupplyOrder = () => {
+  console.log('uploading');
+};
+
+const fileInput = ref(null);
+
+const browsePdf = () => {
+  fileInput.value.click();
+};
+
+const onFileChange = async(event) => {
+  const file = event.target.files[0];
+  if (file) {
+
+    const formData = new FormData();
+    formData.append('id', invoiceId.value);
+    formData.append('supply_order', file);
+    const response = await orderStore.uploadSupplyOrder(formData);
+    invoice.value.supply_order = `${process.env.API_BASE_URL}/media/${response.file}`;
   }
 };
 
+const printReport = async() => {
 
-const searchProduct = ref();
-
-const loadingProducts = ref(false);
-
-const sales_column = [
-  {name: "Name", label: "Product", field: "name", sortable: false, align: "left"},
-];
-
-const updatePrice = (rowInfo) => {
-  const unitId = rowInfo.unit;
-  const selectedUnit = productUnits.value.find((u) => u.id === unitId);
-  rowInfo.gross = parseFloat(rowInfo.quantity) * parseFloat(selectedUnit.value) * rowInfo.unit_price;
+  const params = {
+    vendor: 1,
+    quotation_id: '00006',
+  };
+  loading.value = true;
+  const response = await reportStore.retrieveSupplyOrder(params);
+  loading.value = false;
+  getReport(false, response);
 };
 
-const searchProductInput = ref();
-
-const productCode = ref();
-
-const handleEnter = async () => {
-  if (!productCode.value) return;
-  const filteredProduct = productList.value.find((c) => c.code === productCode.value);
-  if (filteredProduct) {
-    loadingProducts.value = true;
-    await selectProduct(filteredProduct.id);
-    addProduct();
-    productCode.value = null;
-    searchProduct.value = null;
-    loadingProducts.value = false;
-    productSearchRef.value.focusSearch();
-  } else {
-    searchProductInput.value.select();
-    $q.notify({
-      type: 'negative',
-      position: 'top-right',
-      message: `${productCode.value} ${t('invalidCode')}`,
-      progress: true,
-      actions: [
-        { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-      ],
-    });
-  }
-};
-
-const showPrint = ref(false);
-
-const printReceipt = () => {
-  showPrint.value = true;
+const addCondition = (condition) => {
+  invoice.value.conditions = condition.conditions;
+  ensureBulleted();
 }
-
-const printOrder = () => {
-  const headContent = document.head.innerHTML;
-  const elementHtml = document.getElementById('receipt').innerHTML;
-
-  // Create a new window or iframe
-  var printWindow = window.open('', '_blank', 'height=600,width=800');
-
-  printWindow.document.write(`
-    <html>
-      <head>${headContent}</head>
-      <body><div dir="${locale.value === 'ar' ? 'rtl' : 'ltr'}">${elementHtml}</div></body>
-    </html>
-  `);
-
-  printWindow.focus();
-
-  // Close the document and trigger the print
-  printWindow.document.close();
-  printWindow.print();
-  showPrint.value = false;
-  reset();
-  // Close the print window after printing (optional)
-};
-
-const getBranch = () => {
-  const branches = branchStore.getBranches;
-  const selectedBranch = branches.find((b) => b.id === order.value.branch);
-  return selectedBranch?.name || '';
-};
-
-const getCustomer = () => {
-  const customer = customers.value.find((v) => v.id === order.value.customer);
-  return customer?.name || '';
-};
-
-const customerUpdate = (customerName) => {
-  order.value.customer = customerName?.id;
-}
-
-const submitProduct = (submittedProduct) => {
-  productCode.value = submittedProduct.code;
-  handleEnter();
-};
-
-const deleteInvoice = async() => {
-  $q.dialog({
-      title: t('onfirm'),
-      message: t('confirmDeleteInvoice'),
-      cancel: true,
-      persistent: false,
-    }).onOk(async() => {
-      try {
-        await orderStore.deleteOrder(order.value.id);
-        reset();
-        $q.notify({
-        type: 'positive',
-        position: 'top-right',
-        message: t('invoiceDeleted'),
-        progress: true,
-        actions: [
-          { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-        ],
-      });
-      } catch(error) {
-        if (error.status === 403) return;
-        $q.notify({
-          progress: true,
-          type: 'negative',
-          position: 'top-right',
-          message: t('invoiceNotDeleted'),
-          progress: true,
-          actions: [
-            { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
-          ],
-        });
-      }
-    });
-};
-
-const tablePermissions = computed({
-  get: () => {
-    return authStore.getPermissions.tables;
-  },
-});
-
-const isAdmin = computed({
-  get: () => {
-    return authStore.getPermissions.is_admin;
-  },
-});
 </script>
-
-<style scoped>
-.flex-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between; /* Adjust as needed */
-}
-
-.flex-item {
-  flex: 1 1 10%; /* 16% ensures 6 items fit on large screens */
-  box-sizing: border-box;
-  padding: 2px 0; /* Optional: For spacing */
-}
-
-/* Medium Screens */
-@media (max-width: 600px) {
-  .flex-item {
-    flex: 1 1 30%; /* 31% ensures 3 items fit per row */
-  }
-}
-
-/* Small Screens */
-@media (max-width: 300px) {
-  .flex-item {
-    flex: 1 1 50%; /* 48% ensures 2 items fit per row */
-  }
-}
-
-.q-item__section {
-  margin: 0;
-}
-
-@media print {
-  .no-print {
-    display: none;
-  }
-}
-
-th, td {
-  padding: 0 4px; /* Adjust padding for smaller rows */
-  line-height: 0.8; /* Adjust line height for text */
-  height: 18px; /* Set a fixed height for each row */
-}
-
-tr {
-  height: 18px; /* You can set the height for each row here as well */
-}
-
-@media (max-width: 1023px) {
-  .space {
-    min-height: 90px;
-  }
-}
-</style>

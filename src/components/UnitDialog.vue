@@ -10,12 +10,20 @@
 
             <q-item class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
               <q-item-section>
-                <q-input dense v-model="unitInfo.name" :label="t('unitName')"
-                lazy-rules
-                :rules="[val => !!val || t('required')]"
-                :error="!!errors.name"
-                :error-message="errors.name"
-                autofocus
+                <q-input dense v-model="unitInfo.code" :label="t('code')"
+                  lazy-rules
+                  :rules="[val => !!val || t('required')]"
+                  :error="!!errors.code"
+                  :error-message="errors.code"
+                  autofocus
+                />
+              </q-item-section>
+              <q-item-section>
+                <q-input dense v-model="unitInfo.description" :label="t('description')"
+                  lazy-rules
+                  :rules="[val => !!val || t('required')]"
+                  :error="!!errors.description"
+                  :error-message="errors.description"
                 />
               </q-item-section>
             </q-item>
@@ -62,7 +70,8 @@ const props = defineProps({
 
 const unitInfo = ref({
   id: null,
-  name: null,
+  code: null,
+  description: null,
 });
 
 const loading = ref(false);
@@ -71,29 +80,36 @@ const errors = ref({});
 const saveUnit = async() => {
   try {
     if (props.unitId > 0) {
-      console.log(unitInfo.value);
       await unitStore.putUnit(unitInfo.value);
     } else {
       await unitStore.postUnit(unitInfo.value);
     }
     handleClose(true);
   } catch (error) {
-    if (error.response.data.name) {
-      errors.value.name = error.response.data.name.join(', ');
+    if (error.response.data.code) {
+      errors.value.code = error.response.data.code.join(', ');
+    }
+    if (error.response.data.description) {
+      errors.value.description = error.response.data.description.join(', ');
     }
     console.log(error);
   }
 };
 
 const handleClose = (isSaved) => {
-  emit('closeMeEvent', isSaved);
+  const result = {
+    isSaved,
+    savedId: unitInfo.value.id,
+  };
+  emit('closeMeEvent', result);
 };
 
 onMounted(() => {
   if (props.unitId > 0) {
-    const selectedUnit = unitStore.getUnits.filter((u) => u.id === props.unitId);
-    unitInfo.value.id = selectedUnit[0].id;
-    unitInfo.value.name = selectedUnit[0].name;
+    const selectedUnit = unitStore.getUnits.find((u) => u.id === props.unitId);
+    unitInfo.value.id = selectedUnit.id;
+    unitInfo.value.code = selectedUnit.code;
+    unitInfo.value.description = selectedUnit.description;
   }
 });
 

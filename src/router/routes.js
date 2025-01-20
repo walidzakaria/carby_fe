@@ -21,7 +21,7 @@ const routes = [
         meta: { requiresAuth: true, requiresPermissions: true, isReport: false, name: 'purchases' }, },
       { path: 'purchases/:invoiceNumber', component: () => import('pages/PurchasePage.vue'),
         meta: { requiresAuth: true, requiresPermissions: true, isReport: false, name: 'purchases-invoice' }, },
-      { path: 'sales/', component: () => import('pages/SalesPage.vue'),
+      { path: 'sales/', component: () => import('pages/SalesIndex.vue'),
         meta: { requiresAuth: true, requiresPermissions: true, isReport: false, name: 'sales' }, },
       { path: 'sales/:invoiceNumber', component: () => import('pages/SalesPage.vue'),
         meta: { requiresAuth: true, requiresPermissions: true, isReport: false, name: 'sales-invoice' }, },

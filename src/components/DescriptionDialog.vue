@@ -2,20 +2,18 @@
   <div>
     <q-card>
       <q-card-section class="text-h6 text-white bg-green">
-        <div class="text-h6">{{ categoryId === 0 ? t('addCategory') : t('editCategory') }}</div>
+        <div class="text-h6">{{ descriptionId === 0 ? t('addDescription') : t('editDescription') }}</div>
       </q-card-section>
-      <q-form @submit.prevent="saveCategory" class="q-gutter-md">
+      <q-form @submit.prevent="saveDescription" class="q-gutter-md">
         <q-card-section class="q-pa-sm">
           <q-list class="row">
 
             <q-item class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
               <q-item-section>
-                <q-input dense v-model="categoryInfo.name" :label="t('categoryName')"
-                lazy-rules
-                :rules="[val => !!val || t('required')]"
-                :error="!!errors.name"
-                :error-message="errors.name"
-                autofocus
+                <q-input dense v-model="descriptionInfo.name" :label="t('description')"
+                  lazy-rules
+                  :rules="[val => !!val || t('required')]"
+                  autofocus
                 />
               </q-item-section>
             </q-item>
@@ -48,52 +46,58 @@
 import { ref, onMounted, computed } from 'vue';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
-import { useCategoryStore } from "src/stores/category-store";
+import { useProductStore } from 'src/stores/product-store';
 const { t } = useI18n();
 
-const categoryStore = useCategoryStore();
+const productStore = useProductStore();
 
 const $q = useQuasar();
 const emit = defineEmits(['closeMeEvent']);
 
 const props = defineProps({
-  categoryId: Number,
+  descriptionId: Number,
+  productId: Number,
 });
 
-const categoryInfo = ref({
+const descriptionInfo = ref({
   id: null,
   name: null,
+  product: null,
 });
 
 const loading = ref(false);
 
-const errors = ref({});
-const saveCategory = async() => {
+const saveDescription = async() => {
   try {
-    if (props.categoryId > 0) {
-      console.log(categoryInfo.value);
-      const response = await categoryStore.putCategory(categoryInfo.value);
+    if (props.descriptionId > 0) {
+      console.log(descriptionInfo.value);
+      const response = await productStore.updateDescription(descriptionInfo.value);
     } else {
-      const response = await categoryStore.postCategory(categoryInfo.value);
+      const response = await productStore.createDescription(descriptionInfo.value);
+      descriptionInfo.value.id = response.id;
     }
     handleClose(true);
   } catch (error) {
-    if (error.response.data.name) {
-      errors.value.name = error.response.data.name.join(', ');
-    }
     console.log(error);
   }
 };
 
 const handleClose = (isSaved) => {
-  emit('closeMeEvent', isSaved);
+  const result = {
+    isSaved,
+    savedId: descriptionInfo.value.id,
+  };
+  emit('closeMeEvent', result);
 };
 
 onMounted(() => {
-  if (props.categoryId > 0) {
-    const selectedCategory = categoryStore.getCategories.filter((c) => c.id === props.categoryId);
-    categoryInfo.value.id = selectedCategory[0].id;
-    categoryInfo.value.name = selectedCategory[0].name;
+  descriptionInfo.value.product = productStore.getCurrentProduct.id;
+  console.log('pro', productStore.getCurrentProduct, 'props', props.descriptionId);
+  if (props.descriptionId > 0) {
+    const selectedDescription = productStore.getCurrentProduct.descriptions.find((d) => d.id === props.descriptionId );
+    console.log('selectedDescription', selectedDescription);
+    descriptionInfo.value.id = selectedDescription.id;
+    descriptionInfo.value.name = selectedDescription.name;
   }
 });
 

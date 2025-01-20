@@ -71,8 +71,6 @@
 
             <q-space/>
             <div v-if="selectedCustomer.id">
-              <q-btn round flat icon="account_balance" color="green" @click="showOpeningBalance(selectedCustomer.id)"
-              :disabled="!tablePermissions.customerBalance.r"></q-btn>
               <q-btn round flat icon="delete" color="red" @click="confirmDelete(selectedCustomer.id)"
                 :disabled="!tablePermissions.customer.d"></q-btn>
               <q-btn round flat icon="edit" color="primary" @click="showAdd(selectedCustomer.id)"
@@ -165,8 +163,6 @@
             </q-item>
 
             <q-space/>
-            <q-btn round flat icon="account_balance" color="green" @click="showOpeningBalance(selectedCustomer.id)"
-            :disabled="!tablePermissions.customerBalance.r"></q-btn>
             <q-btn round flat icon="delete" color="red" @click="confirmDelete(selectedCustomer.id)"
             :disabled="!tablePermissions.customer.d">
             </q-btn>
@@ -194,9 +190,7 @@
     <q-dialog v-model="showCustomerForm">
       <customer-dialog :customerId="customerId" @closeMeEvent="handleCloseDialog"></customer-dialog>
     </q-dialog>
-    <q-dialog v-model="showOpeningBalanceForm">
-      <opening-balance :user-id="customerId" user-type="customer" @closeMeEvent="handleCloseDialog"></opening-balance>
-    </q-dialog>
+
   </q-page>
 </template>
 
@@ -211,7 +205,6 @@ const { t, locale } = useI18n();
 const UserDetailItem = defineAsyncComponent(() => import('components/UserDetailItem.vue'));
 const CustomerItem = defineAsyncComponent(() => import('components/VendorItem.vue'));
 const CustomerDialog = defineAsyncComponent(() => import('components/CustomerDialog.vue'));
-const OpeningBalance = defineAsyncComponent(() => import('components/OpeningBalance.vue'));
 
 const customerStore = useCustomerStore();
 const authStore = useAuthStore();

@@ -11,7 +11,12 @@
           aria-label="Menu"
         />
         <q-toolbar-title @click="goToHome" style="cursor: pointer;">
-          <b>C </b> store
+            <q-icon :style="$q.screen.lt.sm ? 'height: 40px; width: 40px;' : 'width: 150px; padding: 8px 0; margin-left: -20px;'">
+            <img
+              :src="$q.screen.lt.sm ? androidChrome : loginLogo"
+              alt="logo"
+              :style="$q.screen.lt.sm ? '' : 'min-height: 50px; background-color: #c9c9c9; border-radius: 50px;'">
+            </q-icon>
         </q-toolbar-title>
         <q-space/>
         <q-btn-dropdown
@@ -21,18 +26,19 @@
           flat
           dense
           icon="language"
+          ref="langDropdown"
         >
         <q-list>
             <q-item
               key="enUS"
               clickable
               :class="{ 'lang-selected': currentLocale === 'en' }"
-              @click="selectLanguage('en')"
+              @click="selectLanguage('en'); $refs.langDropdown.hide()"
             >
               <q-item-section avatar>
-                <q-icon>
-                  <img src="~assets/icons/en.svg" alt="english" height="20px">
-                </q-icon>
+          <q-icon>
+            <img src="~assets/icons/en.svg" alt="english" height="20px">
+          </q-icon>
               </q-item-section>
               <q-item-section>English</q-item-section>
             </q-item>
@@ -42,12 +48,12 @@
               key="arEG"
               clickable
               :class="{ 'lang-selected': currentLocale === 'ar' }"
-              @click="selectLanguage('ar')"
+              @click="selectLanguage('ar'); $refs.langDropdown.hide()"
             >
               <q-item-section avatar>
-                <q-icon>
-                  <img src="~assets/icons/eg.svg" alt="arabic">
-                </q-icon>
+          <q-icon>
+            <img src="~assets/icons/eg.svg" alt="arabic">
+          </q-icon>
               </q-item-section>
               <q-item-section>العربية</q-item-section>
             </q-item>
@@ -140,15 +146,6 @@
             <q-item-label>{{ t('customers') }}</q-item-label>
           </q-item-section>
         </q-item>
-        <q-item to="/purchases" active-class="q-item-no-link-highlighting"
-        v-if="pagePermitted('purchases')">
-          <q-item-section avatar>
-            <q-icon name="local_mall"/>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>{{ t('purchases') }}</q-item-label>
-          </q-item-section>
-        </q-item>
         <q-item to="/sales" active-class="q-item-no-link-highlighting"
         v-if="pagePermitted('sales')">
           <q-item-section avatar>
@@ -158,7 +155,7 @@
             <q-item-label>{{ t('sales') }}</q-item-label>
           </q-item-section>
         </q-item>
-        <q-item to="/cash" active-class="q-item-no-link-highlighting"
+        <!-- <q-item to="/cash" active-class="q-item-no-link-highlighting"
         v-if="pagePermitted('cash')">
           <q-item-section avatar>
             <q-icon name="account_balance_wallet"/>
@@ -175,15 +172,15 @@
           <q-item-section>
             <q-item-label>{{ t('currency') }}</q-item-label>
           </q-item-section>
-        </q-item>
+        </q-item> -->
         <q-expansion-item
           icon="description"
           :label="t('reports')"
           v-if="permissions.is_admin || permissions.reports.length > 0"
         >
-          <q-list class="q-pl-lg">
+          <!-- <q-list class="q-pl-lg">
             <q-item to="/reports/daily" active-class="q-item-no-link-highlighting"
-            v-if="reportPermitted('daily')">
+              v-if="reportPermitted('daily')">
               <q-item-section avatar>
                 <q-icon name="calendar_today"/>
               </q-item-section>
@@ -268,7 +265,7 @@
                 <q-item-label>{{ t('debit') }}</q-item-label>
               </q-item-section>
             </q-item>
-          </q-list>
+          </q-list> -->
         </q-expansion-item>
         <q-expansion-item
           icon="receipt_long"
@@ -314,14 +311,24 @@ import UserMenu from './UserMenu.vue';
 import { useAuthStore } from 'src/stores/auth-store';
 import { useVendorStore } from 'src/stores/vendor-store';
 import { useCustomerStore } from 'src/stores/customer-store';
+import { useProductStore } from 'src/stores/product-store';
+import { useUnitStore } from 'src/stores/unit-store';
+
 import { useRouter } from 'vue-router';
 
 import { useI18n } from 'vue-i18n';
 const { t, locale } = useI18n();
+import androidChrome from '../assets/android-chrome-512x512.png';
+import loginLogo from '../assets/login-logo.svg';
+import enLogo from '../assets/icons/en.svg';
+import arLogo from '../assets/icons/eg.svg';
+
 
 const authStore = useAuthStore();
 const vendorStore = useVendorStore();
 const customerStore = useCustomerStore();
+const productStore = useProductStore();
+const unitStore = useUnitStore();
 
 const router = useRouter();
 
@@ -346,11 +353,11 @@ onMounted(async() => {
   selectLanguage(savedLocale);
   await authStore.getInfo();
   console.log(authStore.getPermissions);
-  loadDefinitions();
+  await loadDefinitions();
   intervalId = setInterval(() => {
-    console.log('hearbeat');
     authStore.heartbeat();
   }, 10000);
+
 });
 
 onUnmounted(() => {
@@ -366,11 +373,12 @@ const userInfo = computed({
   set: (value) => { authStore.userInfo = value; }
 });
 
-const loadDefinitions = () => {
+const loadDefinitions = async() => {
 
-  vendorStore.listShortVendors();
-  customerStore.listShortCustomers();
-
+  await vendorStore.listShortVendors();
+  await customerStore.listShortCustomers();
+  await productStore.listProducts();
+  await unitStore.listUnits();
 };
 
 document.documentElement.setAttribute('dir', 'rtl');

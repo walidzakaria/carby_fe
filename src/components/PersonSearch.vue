@@ -1,16 +1,14 @@
 <template>
   <q-select
       dense :outlined="isOutlined"
-      class="full-width"
       style="padding: 0"
       v-model="selectedPerson"
       :options="personOptions"
-      :label="label"
       :clearable="isClearable"
       use-input
       input-debounce="0"
       @filter="filterFnProd"
-      option-label="name"
+      :option-label=optionLabel
       option-value="id"
       options-selected-class="text-deep-orange"
       :loading="loadingNames"
@@ -37,7 +35,6 @@ const emit = defineEmits(['valueUpdate']);
 
 const props = defineProps({
   listOptions: Array,
-  label: String,
   defaultSelection: {},
   isRequired: {
     type: Boolean,
@@ -54,6 +51,18 @@ const props = defineProps({
   isClearable: {
     type: Boolean,
     default: true,
+  },
+  optionLabel: {
+    type: String,
+    default: 'name',
+  },
+  emitValue: {
+    type: Boolean,
+    default: false,
+  },
+  mapOptions: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -89,14 +98,10 @@ onMounted(() => {
 const setName = (val) => {
   emit('valueUpdate', val);
 };
-
 const matchName = (nameId) => {
-  const selection = props.listOptions.filter((n) => n.id === nameId);
-  if (selection.length > 0) {
-    selectedPerson.value = selection[0];
-  } else {
-    selectedPerson.value = null;
-  }
+  const selection = props.listOptions.find((n) => n.id === nameId);
+  console.log('selection', selection, props.listOptions, nameId);
+  selectedPerson.value = selection || null;
 };
 
 watch(() => props.defaultSelection, (newVal) => {

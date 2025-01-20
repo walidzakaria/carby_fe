@@ -49,7 +49,7 @@
               </q-item-section>
 
               <q-item-section>
-                <q-item-label lines="1">{{ description.description }}</q-item-label>
+                <q-item-label lines="1">{{ description.name }}</q-item-label>
               </q-item-section>
             </q-item>
 
@@ -123,7 +123,7 @@
             </q-item-section>
 
             <q-item-section>
-              <q-item-label lines="1">{{ description.description }}</q-item-label>
+              <q-item-label lines="1">{{ description.name }}</q-item-label>
             </q-item-section>
           </q-item>
         </q-card>
@@ -157,7 +157,7 @@ const detailList = [
   {
     icon: 'description',
     label: 'description',
-    field: 'description',
+    field: 'name',
     textColor: 'grey-8'
   },
 ];
@@ -217,7 +217,7 @@ const selectedProductView = computed({
     const product = selectedProduct.value;
     const description = descriptions.value.filter((d) => d.product === product.id)[0];
     return {
-      description: description?.description,
+      description: description?.name,
     };
   },
 });

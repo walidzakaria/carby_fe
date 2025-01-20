@@ -19,6 +19,7 @@ export const useVendorStore = defineStore('vendor', {
   },
   actions: {
     async listShortVendors() {
+      console.log('listing vendors...');
       try {
         const response = await api.get('/api/operation/vendor/');
         this.vendorsShort = response.data || [];
@@ -59,22 +60,6 @@ export const useVendorStore = defineStore('vendor', {
     async deleteVendor(vendorId) {
       try {
         const response = await api.delete(`/api/operation/vendor/${vendorId}/`);
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
-    },
-    async listOpeningBalances(vendorId) {
-      try {
-        const response = await api.get(`/api/operation/opening-balance/${vendorId}/get_all/`);
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
-    },
-    async createOpeningBalances(balanceInfo) {
-      try {
-        const response = await api.post('/api/operation/opening-balance/create_all/', balanceInfo);
         return response.data;
       } catch (error) {
         throw error;

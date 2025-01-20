@@ -46,7 +46,7 @@
                     >
                       <q-item-section>
                         <q-input
-                          v-model="description.description"
+                          v-model="description.name"
                           :label="t('description')"
                           lazy-rules
                           :rules="[val => !!val || t('required')]"
@@ -129,6 +129,7 @@ const saveProduct = async() => {
   loading.value = true;
   errors.value = {};
 
+  console.log(productInfo.value);
   try {
     let returnedId = 0;
     if (props.productId === 0) {
@@ -186,7 +187,7 @@ onMounted(() => {
     const productData = productStore.getCurrentProduct;
     console.log('productData', productData);
     console.log('descriptions', productStore.getDescriptions);
-    const descriptions = productStore.getDescriptions.filter((d) => d.product === props.productId).map((d) => ({ description: d.description }));
+    const descriptions = productStore.getDescriptions.filter((d) => d.product === props.productId).map((d) => ({ id: d.id, name: d.name }));
     console.log('descriptions', descriptions);
 
     productInfo.value.id = props.productId;
@@ -200,12 +201,39 @@ onMounted(() => {
 
 const addDescription = () => {
   productInfo.value.descriptions.push({
-    description: '',
+    id: null,
+    name: '',
   });
 };
 
-const removeDescription = (descriptionIndex) => {
-  productInfo.value.descriptions.splice(descriptionIndex, 1);
+const removeDescription = async(descriptionIndex) => {
+  try {
+    if (productInfo.value.descriptions[descriptionIndex].id > 0) {
+      await productStore.deleteDescription(productInfo.value.descriptions[descriptionIndex].id);
+    }
+    productInfo.value.descriptions.splice(descriptionIndex, 1);
+    $q.notify({
+      type: 'positive',
+      position: 'top-right',
+      message: t('descriptionRemoved'),
+      progress: true,
+      actions: [
+        { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
+      ],
+    });
+  } catch (error) {
+    console.error(error);
+    $q.notify({
+      color: 'negative',
+      position: 'top-right',
+      message: t('failedToRemoveDescription'),
+      icon: 'report_problem',
+      progress: true,
+      actions: [
+        { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
+      ],
+    });
+  }
 };
 
 const handleEnter = () => {

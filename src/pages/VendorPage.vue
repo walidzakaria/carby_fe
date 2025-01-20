@@ -191,9 +191,6 @@
     <q-dialog v-model="showVendorForm">
       <vendor-dialog :vendorId="vendorId" @closeMeEvent="handleCloseDialog"></vendor-dialog>
     </q-dialog>
-    <q-dialog v-model="showOpeningBalanceForm">
-      <opening-balance :user-id="vendorId" user-type="vendor" @closeMeEvent="handleCloseDialog"></opening-balance>
-    </q-dialog>
   </q-page>
 </template>
 
@@ -209,7 +206,6 @@ const { t, locale } = useI18n();
 const UserDetailItem = defineAsyncComponent(() => import('components/UserDetailItem.vue'));
 const VendorItem = defineAsyncComponent(() => import('components/VendorItem.vue'));
 const VendorDialog = defineAsyncComponent(() => import('components/VendorDialog.vue'));
-const OpeningBalance = defineAsyncComponent(() => import('components/OpeningBalance.vue'));
 
 const vendorStore = useVendorStore();
 const authStore = useAuthStore();
