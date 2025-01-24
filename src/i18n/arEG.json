@@ -407,5 +407,11 @@
   "open": "فتح",
   "supplyOrder": "أمر توريد",
   "close": "اغلاق",
-  "confirmClose": "هل تريد بالتأكيد اغلاق هذا الأمر؟"
+  "confirmClose": "هل تريد بالتأكيد اغلاق هذا الأمر؟",
+  "showTemplate": "اظهار القالب",
+  "stock": "المخزن",
+  "quotationQuantity": "كمية العرض",
+  "country": "الصناعة",
+  "totalSales": "إجمالي البيع",
+  "poNumber": "رقم أمر الشراء"
 }

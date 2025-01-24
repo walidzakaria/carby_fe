@@ -156,7 +156,7 @@ const handleSearch = async() => {
     creation_date: order.creation_date,
     status: order.status,
     customer: customerOptions.value.find((c) => c.id === order.customer).name,
-    total: order.status === 'Quotation' || order.status === 'Canceled' ?  parseFloat(order.quotation_total_amount) : parseFloat(order.total_amount),
+    total: order.status === 'Quotation' || order.status === 'Canceled' ?  parseFloat(order.quotation_total_amount_a) : parseFloat(order.total_amount),
   }));
   totalPages.value = Math.ceil(response.count / 9)
   if (totalPages.value === 0) page.value = 0;

@@ -14,6 +14,14 @@ export const useReportStore = defineStore('report', {
         throw error;
       }
     },
+    async retrieveQuotation(params) {
+      try {
+        const response = await api.get('/api/reports/quotation-orders/', { params: params });
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
   },
 
 });

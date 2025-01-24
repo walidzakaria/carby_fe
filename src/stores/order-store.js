@@ -5,6 +5,8 @@ export const useOrderStore = defineStore('order', {
   state: () => ({
     currentOrder: {},
     conditions: [],
+    countries: [],
+    bankAccounts: [],
   }),
   getters: {
     getCurrentOrder: (state) => {
@@ -20,7 +22,13 @@ export const useOrderStore = defineStore('order', {
     },
     getConditions: (state) => {
       return state.conditions;
-    }
+    },
+    getCountries: (state) => {
+      return state.countries;
+    },
+    getBankAccounts: (state) => {
+      return state.bankAccounts;
+    },
   },
   actions: {
     async postOrder(orderInfo) {
@@ -84,6 +92,24 @@ export const useOrderStore = defineStore('order', {
         this.conditions = response.data;
       } catch (error) {
         this.conditions = [];
+        throw error;
+      }
+    },
+    async listCountries() {
+      try {
+        const response = await api.get('/api/definitions/country/');
+        this.countries = response.data;
+      } catch (error) {
+        this.countries = [];
+        throw error;
+      }
+    },
+    async listBankAccounts() {
+      try {
+        const response = await api.get('/api/definitions/bank-account/');
+        this.bankAccounts = response.data;
+      } catch (error) {
+        this.bankAccounts = [];
         throw error;
       }
     },

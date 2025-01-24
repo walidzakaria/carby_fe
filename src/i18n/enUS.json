@@ -409,5 +409,11 @@
   "open": "Open",
   "supplyOrder": "Supply Order",
   "close": "Close",
-  "confirmClose": "Are you sure you want to close this supply order?"
+  "confirmClose": "Are you sure you want to close this supply order?",
+  "showTemplate": "Show Template",
+  "stock": "Stock",
+  "quotationQuantity": "Quotation Quantity",
+  "country": "Country",
+  "totalSales": "Total Sales",
+  "poNumber": "Purchase Order No."
 }
