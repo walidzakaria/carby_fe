@@ -140,15 +140,14 @@
               <q-item class="col-xl-4 col-lg-4 col-md-4 col-sm-4 col-xs-12 q-pa-xs">
                 <q-item-section>
                   <q-select v-model="lineInfo.country_b" :options="countries" option-label="name" option-value="id"
-                    style="margin-bottom: 20px;" emit-value :label="`${t('country')} (B)`" map-options lazy-rules dense
-                    outlined />
+                    emit-value :label="`${t('country')} (B)`" map-options dense outlined />
                 </q-item-section>
               </q-item>
               <!-- Unit Value Input -->
               <q-item class="col-xl-3 col-lg-3 col-md-3 col-sm-3 col-xs-12 q-pa-xs">
                 <q-item-section>
                   <q-input type="number" dense outlined v-model="lineInfo.unit_value_b" :label="`${t('unitValue')} (B)`"
-                    lazy-rules :rules="[val => !!val || t('required')]" @change="calculateSales('b')" />
+                    @change="calculateSales('b')" />
                 </q-item-section>
               </q-item>
 
@@ -156,8 +155,7 @@
               <q-item class="col-xl-2 col-lg-2 col-md-2 col-sm-2 col-xs-12 q-pa-xs">
                 <q-item-section>
                   <q-input type="number" dense outlined v-model="lineInfo.margin_b" :label="`${t('profit')} (B)`"
-                    suffix="%" lazy-rules :rules="[val => !!val || t('required')]" @blur="calculateSales('b')"
-                    @change="calculateSales('b')" />
+                    suffix="%" @blur="calculateSales('b')" @change="calculateSales('b')" />
                 </q-item-section>
               </q-item>
 
@@ -165,8 +163,8 @@
               <q-item class="col-xl-3 col-lg-3 col-md-3 col-sm-3 col-xs-12 q-pa-xs">
                 <q-item-section>
                   <q-input type="number" dense outlined v-model="lineInfo.sales_price_b"
-                    :label="`${t('salesPrice')} (B)`" lazy-rules :rules="[val => !!val || t('required')]"
-                    :hint="`${t('total')}: ${totalValue || 0}`" @change="calculateMargin('b')" />
+                    :label="`${t('salesPrice')} (B)`" :hint="`${t('total')}: ${totalValue || 0}`"
+                    style="margin-top: 18px;" @change="calculateMargin('b')" />
                 </q-item-section>
               </q-item>
 
@@ -177,8 +175,7 @@
               <q-item class="col-xl-4 col-lg-4 col-md-4 col-sm-4 col-xs-12 q-pa-xs">
                 <q-item-section>
                   <q-select v-model="lineInfo.country_c" :options="countries" option-label="name" option-value="id"
-                    style="margin-bottom: 20px;" emit-value :label="`${t('country')} (C)`" map-options lazy-rules dense
-                    outlined />
+                    emit-value :label="`${t('country')} (C)`" map-options dense outlined />
                 </q-item-section>
               </q-item>
 
@@ -186,7 +183,7 @@
               <q-item class="col-xl-3 col-lg-3 col-md-3 col-sm-3 col-xs-12 q-pa-xs">
                 <q-item-section>
                   <q-input type="number" dense outlined v-model="lineInfo.unit_value_c" :label="`${t('unitValue')} (C)`"
-                    lazy-rules :rules="[val => !!val || t('required')]" @change="calculateSales('c')" />
+                    @change="calculateSales('c')" />
                 </q-item-section>
               </q-item>
 
@@ -194,8 +191,7 @@
               <q-item class="col-xl-2 col-lg-2 col-md-2 col-sm-2 col-xs-12 q-pa-xs">
                 <q-item-section>
                   <q-input type="number" dense outlined v-model="lineInfo.margin_c" :label="`${t('profit')} (C)`"
-                    suffix="%" lazy-rules :rules="[val => !!val || t('required')]" @blur="calculateSales('c')"
-                    @change="calculateSales('c')" />
+                    suffix="%" @blur="calculateSales('c')" @change="calculateSales('c')" />
                 </q-item-section>
               </q-item>
 
@@ -203,8 +199,8 @@
               <q-item class="col-xl-3 col-lg-3 col-md-3 col-sm-3 col-xs-12 q-pa-xs">
                 <q-item-section>
                   <q-input type="number" dense outlined v-model="lineInfo.sales_price_c"
-                    :label="`${t('salesPrice')} (C)`" lazy-rules :rules="[val => !!val || t('required')]"
-                    :hint="`${t('total')}: ${totalValue || 0}`" @change="calculateMargin('c')" />
+                    :label="`${t('salesPrice')} (C)`" :hint="`${t('total')}: ${totalValue || 0}`"
+                    style="margin-top: 18px;" @change="calculateMargin('c')" />
                 </q-item-section>
               </q-item>
 
@@ -401,7 +397,7 @@ const productToEdit = ref(0);
 const showAddProduct = async (productId) => {
   productToEdit.value = productId;
   await productStore.retrieveProduct(productId);
-  await productId.listProducts();
+  await productStore.listProducts();
   showProductDialog.value = true;
 };
 
