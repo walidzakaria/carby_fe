@@ -413,5 +413,17 @@
   "quotationQuantity": "كمية العرض",
   "country": "الصناعة",
   "totalSales": "إجمالي البيع",
-  "poNumber": "رقم أمر الشراء"
+  "poNumber": "رقم أمر الشراء",
+  "attachments": "المرفقات",
+  "addAttachment": "إضافة مرفق",
+  "editAttachment": "تعديل مرفق",
+  "confirmDeleteAttachment": "هل تريد بالتأكيد حذف هذا المرفق؟",
+  "attachmentDeleted": "تم حذف المرفق بنجاح!",
+  "attachmentNotDeleted": "فشل في حذف المرفق!",
+  "conditions": "كراسة الشروط",
+  "paymentOrder": "أمر دفع",
+  "other": "أخرى",
+  "fileName": "اسم الملف",
+  "fileType": "نوع الملف",
+  "attach": "إرفاق"
 }

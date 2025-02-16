@@ -415,5 +415,17 @@
   "quotationQuantity": "Quotation Quantity",
   "country": "Country",
   "totalSales": "Total Sales",
-  "poNumber": "Purchase Order No."
+  "poNumber": "Purchase Order No.",
+  "attachments": "Attachments",
+  "addAttachment": "Add Attachment",
+  "editAttachment": "Edit Attachment",
+  "confirmDeleteAttachment": "Are you sure you want to delete this attachment?",
+  "attachmentDeleted": "Attachment deleted successfully!",
+  "attachmentNotDeleted": "Failed to delete the attachment!",
+  "conditions": "Conditions",
+  "paymentOrder": "Payment Order",
+  "other": "Other",
+  "fileName": "File Name",
+  "fileType": "File Type",
+  "attach": "Attach"
 }

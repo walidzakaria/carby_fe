@@ -7,6 +7,7 @@ export const useOrderStore = defineStore('order', {
     conditions: [],
     countries: [],
     bankAccounts: [],
+    attachments: [],
   }),
   getters: {
     getCurrentOrder: (state) => {
@@ -29,6 +30,9 @@ export const useOrderStore = defineStore('order', {
     getBankAccounts: (state) => {
       return state.bankAccounts;
     },
+    getAttachments: (state) => {
+      return state.attachments;
+    },
   },
   actions: {
     async postOrder(orderInfo) {
@@ -47,10 +51,50 @@ export const useOrderStore = defineStore('order', {
         throw error;
       }
     },
-    async uploadSupplyOrder(supplyInfo) {
+    // async uploadSupplyOrder(supplyInfo) {
+    //   try {
+    //     const productId = supplyInfo.get('id')
+    //     const response = await api.post(`/api/operation/quotation/${productId}/upload-supply-order/`, supplyInfo, {
+    //       'Content-Type': 'multipart/form-data',
+    //     });
+    //     return response.data;
+    //   } catch (error) {
+    //     throw error;
+    //   }
+    // },
+    async listAttachments(orderId) {
       try {
-        const productId = supplyInfo.get('id')
-        const response = await api.post(`/api/operation/quotation/${productId}/upload-supply-order/`, supplyInfo, {
+        const response = await api.get(`/api/operation/attachment/${orderId}/get-by-quotation/`);
+        this.attachments = response.data;
+        return response.data;
+      } catch (error) {
+        this.attachments = [];
+        throw error;
+      }
+    },
+    async addAttachment(attachmentInfo) {
+      try {
+        const response = await api.post('/api/operation/attachment/', attachmentInfo, {
+          'Content-Type': 'multipart/form-data',
+        });
+        console.log(response.data);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    async deleteAttachment(attachmentId) {
+      try {
+        const response = await api.delete(`/api/operation/attachment/${attachmentId}/`);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    async editAttachment(attachmentInfo) {
+      try {
+        const attachmentId = attachmentInfo.get('id');
+        const response = await api.patch(`/api/operation/attachment/${attachmentId}/`, attachmentInfo, {
           'Content-Type': 'multipart/form-data',
         });
         return response.data;

@@ -200,8 +200,12 @@
                 <td class="text-right" v-if="invoice.status !== 'Quotation'">{{ row.quantity *
                   row[`sales_price_${row.label.toLowerCase()}`] }}</td>
                 <td>
-                  <q-btn outline round icon="edit" size="sm" text-color="blue" @click="showAddInvoiceLineDialog(row)" />
-                  <q-btn outline round icon="delete" size="sm" text-color="orange-9" @click="deleteRow(row)" />
+                  <q-btn-group rounded dir="ltr">
+                    <q-btn outline rounded glossy icon="delete" size="md" text-color="orange-9"
+                      @click="deleteAttachment(attachmentInfo.id)" />
+                    <q-btn outline rounded glossy icon="edit" size="md" text-color="blue"
+                      @click="showAttachmentDialog(attachmentInfo)" />
+                  </q-btn-group>
                 </td>
               </tr>
             </tbody>
@@ -236,22 +240,73 @@
           <div class="q-table__title q-mr-md text-black">{{ t('supplyOrder') }}</div>
           <div class="col-12 q-pt-md" style="border-top: 1px solid lightgrey; text-align: center;" dir="ltr">
 
-
-            <q-btn :label="t('upload')" type="button" class="text-capitalize" rounded color="blue" icon="cloud" outline
-              @click="browsePdf" style="max-width: 150px; margin: 3px;" />
-            <q-btn :label="t('open')" type="button" class="text-capitalize" rounded color="green" outline
-              icon="visibility" :disable="!invoice.supply_order" :href="invoice.supply_order" target="_blank"
-              style="max-width: 150px; margin: 3px;" />
             <q-input filled dense v-model="invoice.po_number" :rules="[val => !!val || t('required')]"
               :label="t('poNumber')" style="max-width: 200px; margin: 10px auto 0 auto;" outlined />
             <q-select v-model="invoice.bank_account" :options="bankAccounts" option-label="account_name"
               :rules="[val => !!val || t('required')]" option-value="id"
               style="max-width: 200px; margin: 10px auto 0 auto;" emit-value :label="t('bankAccount')" map-options
               lazy-rules filled dense />
-            <input type="file" ref="fileInput" @change="onFileChange" accept="application/pdf" style="display: none;">
           </div>
         </div>
       </q-card-section>
+
+
+      <q-card class="q-mt-sm no-shadow" bordered :dir="getDir" v-if="invoiceId !== 'NEW'">
+        <q-card-section class="row q-pa-sm">
+          <q-item class="full-width">
+            <q-item-section>
+              <div class="q-table__title q-mr-md text-black">{{ t('attachments') }}</div>
+              <div class="q-gutter-sm">
+                <q-radio v-model="attachmentCategory" val="all" :label="t('all')" />
+                <q-radio v-model="attachmentCategory" val="CONDITIONS" :label="t('conditions')" />
+                <q-radio v-model="attachmentCategory" val="SUPPLY_ORDER" :label="t('supplyOrder')" />
+                <q-radio v-model="attachmentCategory" val="PAYMENT_ORDER" :label="t('paymentOrder')" />
+                <q-radio v-model="attachmentCategory" val="OTHER" :label="t('other')" />
+              </div>
+            </q-item-section>
+            <q-item-section side>
+              <q-btn class="text-capitalize" outline :label="t('addAttachment')" color="indigo-7"
+                @click="showAttachmentDialog(null)"></q-btn>
+            </q-item-section>
+          </q-item>
+        </q-card-section>
+        <q-separator></q-separator>
+        <q-list>
+          <div v-for="attachmentInfo in attachmentList" :key="attachmentInfo.id">
+            <q-item clickable v-ripple>
+              <q-item-section avatar>
+                <q-avatar>
+                  <q-icon name="attachment" round />
+                </q-avatar>
+              </q-item-section>
+
+              <q-item-section>
+
+                <q-item-label lines="1">{{ attachmentInfo.file_type === 'OTHER' ? attachmentInfo.file_name :
+                  getFileName(attachmentInfo.file_type) }} ({{ attachmentInfo.file_number
+                  }})</q-item-label>
+                <q-item-label caption lines="2">
+                  <span class="text-weight-bold">{{ parseDate(attachmentInfo.creation_date) }}</span>
+                  <br>
+                  <a :href="attachmentInfo.file" target="_blank">{{ attachmentInfo.file }}</a>
+                </q-item-label>
+              </q-item-section>
+
+              <q-item-section side top>
+                <q-btn-group rounded dir="ltr">
+                  <q-btn rounded glossy outline icon="delete" color="red"
+                    @click="deleteAttachment(attachmentInfo.id)" />
+                  <q-btn rounded glossy outline icon="edit" color="blue"
+                    @click="showAttachmentDialog(attachmentInfo)" />
+                </q-btn-group>
+              </q-item-section>
+            </q-item>
+
+            <q-separator inset="item" />
+
+          </div>
+        </q-list>
+      </q-card>
 
       <q-card-section class="row q-pb-lg" style="border-bottom: 1px solid lightgrey;">
 
@@ -351,6 +406,9 @@
     <q-dialog v-model="showInvoiceLineDialog">
       <invoice-line :data="invoiceLineToEdit" @close-me-event="closeInvoiceLine" />
     </q-dialog>
+    <q-dialog v-model="attachmentShow">
+      <attachment-dialog :attachment="attachmentToEdit" @close-me-event="closeAttachmentDialog" />
+    </q-dialog>
   </q-page>
 </template>
 
@@ -384,6 +442,7 @@ const reportStore = useReportStore();
 const PersonSearch = defineAsyncComponent(() => import('components/PersonSearch.vue'));
 const CustomerDialog = defineAsyncComponent(() => import('components/CustomerDialog.vue'));
 const InvoiceLine = defineAsyncComponent(() => import('components/InvoiceLine.vue'));
+const AttachmentDialog = defineAsyncComponent(() => import('components/AttachmentDialog.vue'));
 
 const invoiceId = computed({
   get: () => {
@@ -479,6 +538,7 @@ onMounted(async () => {
     invoice.value.quotation_total_amount_c = parseFloat(currentInvoice.quotation_total_amount_c);
     invoice.value.net_amount = parseFloat(currentInvoice.net_amount);
     invoice.value.total_amount = parseFloat(currentInvoice.total_amount);
+    listAttachments();
     await productStore.listProducts();
     await vendorStore.listShortVendors();
     await unitStore.listUnits();
@@ -854,23 +914,6 @@ const uploadSupplyOrder = () => {
   console.log('uploading');
 };
 
-const fileInput = ref(null);
-
-const browsePdf = () => {
-  fileInput.value.click();
-};
-
-const onFileChange = async (event) => {
-  const file = event.target.files[0];
-  if (file) {
-
-    const formData = new FormData();
-    formData.append('id', invoiceId.value);
-    formData.append('supply_order', file);
-    const response = await orderStore.uploadSupplyOrder(formData);
-    invoice.value.supply_order = `${process.env.API_BASE_URL}/media/${response.file}`;
-  }
-};
 
 const printSupplyOrder = async (preview) => {
   if (vendorToPrint.value === null) return;
@@ -940,4 +983,89 @@ const getTotal = (row) => {
 };
 
 const bankAccounts = computed(() => orderStore.getBankAccounts);
+
+const checkFileType = (files) => {
+  return files.filter((f) => f.type === 'application/pdf');
+};
+
+const attachmentToEdit = ref(null);
+const attachmentShow = ref(false);
+const showAttachmentDialog = (attachmentInfo) => {
+  attachmentToEdit.value = attachmentInfo === null ? {
+    id: null,
+    quotation: invoiceId.value,
+    file: null,
+    file_type: null,
+    file_number: null,
+  } : attachmentInfo;
+  attachmentShow.value = true;
+};
+
+const attachmentCategory = ref('all');
+const listAttachments = async () => {
+  await orderStore.listAttachments(invoiceId.value);
+};
+
+const attachmentList = computed(() => {
+  const allAttachments = orderStore.getAttachments;
+  return attachmentCategory.value === 'all' ? allAttachments : allAttachments.filter((a) => a.file_type === attachmentCategory.value);
+});
+
+const closeAttachmentDialog = (isSaved) => {
+  if (isSaved) listAttachments();
+  attachmentShow.value = false;
+};
+
+
+
+const getFileName = (str) => {
+  const dict = {
+    conditions: t('conditions'),
+    supply_order: t('supplyOrder'),
+    payment_order: t('paymentOrder'),
+    other: t('other'),
+  };
+  return dict[str.toLowerCase()] || str;
+};
+
+const parseDate = (date) => {
+  const d = new Date(date);
+  return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+};
+
+const deleteAttachment = (attachmentId) => {
+  $q.dialog({
+    title: t('confirm'),
+    message: t('confirmDeleteAttachment'),
+    cancel: true,
+    persistent: false,
+  }).onOk(async () => {
+    try {
+      loading.value = true;
+      await orderStore.deleteAttachment(attachmentId);
+      await listAttachments();
+      loading.value = false;
+      $q.notify({
+        type: 'positive',
+        position: 'top-right',
+        message: t('deleteSucceeded'),
+        progress: true,
+        actions: [
+          { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
+        ],
+      });
+    } catch (error) {
+      console.error(error);
+      $q.notify({
+        type: 'positive',
+        position: 'top-right',
+        message: t('failedToDelete'),
+        progress: true,
+        actions: [
+          { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
+        ],
+      });
+    }
+  });
+}
 </script>
