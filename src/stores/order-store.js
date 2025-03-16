@@ -8,6 +8,7 @@ export const useOrderStore = defineStore('order', {
     countries: [],
     bankAccounts: [],
     attachments: [],
+    insurances: [],
   }),
   getters: {
     getCurrentOrder: (state) => {
@@ -32,6 +33,9 @@ export const useOrderStore = defineStore('order', {
     },
     getAttachments: (state) => {
       return state.attachments;
+    },
+    getInsurances: (state) => {
+      return state.insurances;
     },
   },
   actions: {
@@ -72,11 +76,29 @@ export const useOrderStore = defineStore('order', {
         throw error;
       }
     },
+    async listInsurances(orderId) {
+      try {
+        const response = await api.get(`/api/operation/insurance/${orderId}/get-by-quotation/`);
+        this.insurances = response.data;
+      } catch (error) {
+        this.insurances = [];
+        throw error;
+      }
+    },
     async addAttachment(attachmentInfo) {
       try {
         const response = await api.post('/api/operation/attachment/', attachmentInfo, {
           'Content-Type': 'multipart/form-data',
         });
+        console.log(response.data);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    async addInsurance(insuranceInfo) {
+      try {
+        const response = await api.post('/api/operation/insurance/', insuranceInfo);
         console.log(response.data);
         return response.data;
       } catch (error) {
@@ -91,12 +113,28 @@ export const useOrderStore = defineStore('order', {
         throw error;
       }
     },
+    async deleteInsurance(insuranceId) {
+      try {
+        const response = await api.delete(`/api/operation/insurance/${insuranceId}/`);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
     async editAttachment(attachmentInfo) {
       try {
         const attachmentId = attachmentInfo.get('id');
         const response = await api.patch(`/api/operation/attachment/${attachmentId}/`, attachmentInfo, {
           'Content-Type': 'multipart/form-data',
         });
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    async editInsurance(insuranceInfo) {
+      try {
+        const response = await api.patch(`/api/operation/insurance/${insuranceInfo.id}/`, insuranceInfo);
         return response.data;
       } catch (error) {
         throw error;

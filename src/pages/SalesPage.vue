@@ -50,7 +50,13 @@
                 input-style="color: red; font-weight: bold" />
             </div>
           </div>
-
+          <div class="row text-subtitle1 text-grey-7" style="margin-top: 10px;">
+            <div class="col-xl-6 col-lg-6 col-md-5 col-sm-4 col-xs-12 q-pr-xl q-pl-md q-pt-xs"
+              :class="locale === 'en' ? 'text-right' : 'text-left'">{{ t('title') }}:</div>
+            <div class="col-xl-6 col-lg-6 col-md-7 col-sm-8 col-xs-12">
+              <q-input type="text" filled dense v-model="invoice.name" :rules="[val => !!val || t('required')]" />
+            </div>
+          </div>
           <div class="row q-mt-sm text-subtitle1 text-grey-7">
             <div class="col-xl-6 col-lg-6 col-md-5 col-sm-4 col-xs-12 q-pr-xl q-pl-md q-pt-xs"
               :class="locale === 'en' ? 'text-right' : 'text-left'">
@@ -202,9 +208,9 @@
                 <td>
                   <q-btn-group rounded dir="ltr">
                     <q-btn outline rounded glossy icon="delete" size="md" text-color="orange-9"
-                      @click="deleteAttachment(attachmentInfo.id)" />
+                      @click="deleteRow(row.id)" />
                     <q-btn outline rounded glossy icon="edit" size="md" text-color="blue"
-                      @click="showAttachmentDialog(attachmentInfo)" />
+                      @click="showAddInvoiceLineDialog(row)" />
                   </q-btn-group>
                 </td>
               </tr>
@@ -308,6 +314,64 @@
         </q-list>
       </q-card>
 
+      <q-card class="q-mt-sm no-shadow" bordered :dir="getDir" v-if="invoiceId !== 'NEW'">
+        <q-card-section class="row q-pa-sm">
+          <q-item class="full-width">
+            <q-item-section>
+              <div class="q-table__title q-mr-md text-black">{{ t('insurance') }}</div>
+              <div class="q-gutter-sm">
+                <q-radio v-model="insuranceStatus" val="all" :label="t('all')" />
+                <q-radio v-model="insuranceStatus" val="unpaid" :label="t('unpaid')" />
+                <q-radio v-model="insuranceStatus" val="paid" :label="t('insurancePaid')" />
+              </div>
+            </q-item-section>
+            <q-item-section side>
+              <q-btn class="text-capitalize" outline :label="t('addInsurance')" color="indigo-7"
+                @click="showInsuranceDialog(null)"></q-btn>
+            </q-item-section>
+          </q-item>
+        </q-card-section>
+        <q-separator></q-separator>
+        <q-list>
+          <div v-for="insuranceInfo in insuranceList" :key="insuranceInfo.id"
+            :style="{ color: getInsuranceColor(insuranceInfo) }">
+            <q-item clickable v-ripple>
+              <q-item-section avatar>
+                <q-avatar>
+                  <q-icon :name="insuranceInfo.is_paid ? 'task_alt' : 'real_estate_agent'" round />
+                </q-avatar>
+              </q-item-section>
+
+              <q-item-section>
+
+                <q-item-label lines="1">{{ insuranceInfo.amount }} ({{ insuranceInfo.is_paid ? t('insurancePaid') :
+                  t('unpaid')
+                }})</q-item-label>
+                <q-item-label caption lines="2" v-if="!insuranceInfo.is_paid">
+                  <span>{{ t('dueDate') }}: </span><span class="text-weight-bold">{{ parseDate(insuranceInfo.due_date)
+                    }}</span>
+                </q-item-label>
+                <q-item-label caption lines="2" v-else>
+                  <span>{{ t('paymentDone') }}: </span><span class="text-weight-bold">{{
+                    parseDate(insuranceInfo.payment_date)
+                    }}</span>
+                </q-item-label>
+              </q-item-section>
+
+              <q-item-section side top>
+                <q-btn-group rounded dir="ltr">
+                  <q-btn rounded glossy outline icon="delete" color="red" @click="deleteInsurance(insuranceInfo.id)" />
+                  <q-btn rounded glossy outline icon="edit" color="blue" @click="showInsuranceDialog(insuranceInfo)" />
+                </q-btn-group>
+              </q-item-section>
+            </q-item>
+
+            <q-separator inset="item" />
+
+          </div>
+        </q-list>
+      </q-card>
+
       <q-card-section class="row q-pb-lg" style="border-bottom: 1px solid lightgrey;">
 
         <div class="col-lg-8 col-md-8 col-sm-12 col-xs-12"
@@ -378,8 +442,12 @@
               </div>
             </q-menu>
           </q-btn>
-          <q-btn color="green" :label="t('print')" @click="printQuotation(false)" rounded outline icon="print"
-            v-if="invoice.status === 'Quotation'" class="q-mr-sm q-ml-sm"></q-btn>
+          <q-btn color="green" :label="`${t('print')} (C)`" @click="printQuotation(false, 'c')" rounded outline
+            icon="print" v-if="invoice.status === 'Quotation'" class="q-mr-sm q-ml-sm"></q-btn>
+          <q-btn color="green" :label="`${t('print')} (B)`" @click="printQuotation(false, 'b')" rounded outline
+            icon="print" v-if="invoice.status === 'Quotation'" class="q-mr-sm q-ml-sm"></q-btn>
+          <q-btn color="green" :label="`${t('print')} (A)`" @click="printQuotation(false, 'a')" rounded outline
+            icon="print" v-if="invoice.status === 'Quotation'" class="q-mr-sm q-ml-sm"></q-btn>
           <q-btn color="blue" :label="t('view')" @click="printQuotation(true)" rounded outline icon="summarize"
             v-if="invoice.status === 'Quotation'" class="q-mr-sm q-ml-sm"></q-btn>
 
@@ -408,6 +476,9 @@
     </q-dialog>
     <q-dialog v-model="attachmentShow">
       <attachment-dialog :attachment="attachmentToEdit" @close-me-event="closeAttachmentDialog" />
+    </q-dialog>
+    <q-dialog v-model="insuranceShow">
+      <insurance-dialog :insurance="insuranceToEdit" @close-me-event="closeInsuranceDialog" />
     </q-dialog>
   </q-page>
 </template>
@@ -443,6 +514,7 @@ const PersonSearch = defineAsyncComponent(() => import('components/PersonSearch.
 const CustomerDialog = defineAsyncComponent(() => import('components/CustomerDialog.vue'));
 const InvoiceLine = defineAsyncComponent(() => import('components/InvoiceLine.vue'));
 const AttachmentDialog = defineAsyncComponent(() => import('components/AttachmentDialog.vue'));
+const InsuranceDialog = defineAsyncComponent(() => import('components/InsuranceDialog.vue'));
 
 const invoiceId = computed({
   get: () => {
@@ -479,6 +551,7 @@ const handleClose = () => {
 
 const invoice = ref({
   id: null,
+  name: null,
   status: 'Quotation',
   customer: null,
   date_time_issued: getToday().replaceAll('/', '-'),
@@ -518,6 +591,7 @@ onMounted(async () => {
     orderStore.listBankAccounts();
     const currentInvoice = orderStore.getCurrentOrder;
     invoice.value.id = currentInvoice.id;
+    invoice.value.name = currentInvoice.name;
     invoice.value.status = currentInvoice.status;
     invoice.value.customer = currentInvoice.customer;
     invoice.value.date_time_issued = currentInvoice.date_time_issued.split('T')[0].replaceAll('/', '-');
@@ -539,6 +613,7 @@ onMounted(async () => {
     invoice.value.net_amount = parseFloat(currentInvoice.net_amount);
     invoice.value.total_amount = parseFloat(currentInvoice.total_amount);
     listAttachments();
+    listInsurances();
     await productStore.listProducts();
     await vendorStore.listShortVendors();
     await unitStore.listUnits();
@@ -727,7 +802,7 @@ const showAddInvoiceLineDialog = async (selectedLine) => {
     invoiceLineToEdit.value = {
       index: selectedLine.index,
       source: selectedLine.source,
-      vendor: selectedLine.vendor.id,
+      vendor: selectedLine.vendor?.id || null,
       product: selectedLine.product.id,
       description: selectedLine.description.id,
       unit_type: selectedLine.unit_type.id,
@@ -836,6 +911,7 @@ const saveData = async () => {
   ensureBulleted();
   const dataToSave = {
     id: invoiceId.value,
+    name: invoice.value.name,
     status: invoice.value.status,
     customer: invoice.value.customer,
     date_time_issued: invoice.value.date_time_issued,
@@ -928,11 +1004,12 @@ const printSupplyOrder = async (preview) => {
   getReport(preview, response);
 };
 
-const printQuotation = async (preview) => {
+const printQuotation = async (preview, documentLabel) => {
   const params = {
     quotation_id: invoiceId.value,
     show_template: preview,
     label: selectedLabel.value.toLowerCase(),
+    document_label: documentLabel,
   };
   loading.value = true;
   const response = await reportStore.retrieveQuotation(params);
@@ -989,7 +1066,10 @@ const checkFileType = (files) => {
 };
 
 const attachmentToEdit = ref(null);
+const insuranceToEdit = ref(null);
+
 const attachmentShow = ref(false);
+const insuranceShow = ref(false);
 const showAttachmentDialog = (attachmentInfo) => {
   attachmentToEdit.value = attachmentInfo === null ? {
     id: null,
@@ -1001,9 +1081,25 @@ const showAttachmentDialog = (attachmentInfo) => {
   attachmentShow.value = true;
 };
 
+const showInsuranceDialog = (attachmentInfo) => {
+  insuranceToEdit.value = attachmentInfo === null ? {
+    id: null,
+    quotation: invoiceId.value,
+    amount: null,
+    due_date: null,
+    is_paid: false,
+    payment_date: null,
+  } : attachmentInfo;
+  insuranceShow.value = true;
+};
+
 const attachmentCategory = ref('all');
 const listAttachments = async () => {
   await orderStore.listAttachments(invoiceId.value);
+};
+
+const listInsurances = async () => {
+  await orderStore.listInsurances(invoiceId.value);
 };
 
 const attachmentList = computed(() => {
@@ -1011,12 +1107,19 @@ const attachmentList = computed(() => {
   return attachmentCategory.value === 'all' ? allAttachments : allAttachments.filter((a) => a.file_type === attachmentCategory.value);
 });
 
+const insuranceList = computed(() => {
+  return insuranceStatus.value === 'all' ? orderStore.getInsurances : orderStore.getInsurances.filter((a) => a.is_paid === (insuranceStatus.value === 'paid'));
+});
+
 const closeAttachmentDialog = (isSaved) => {
   if (isSaved) listAttachments();
   attachmentShow.value = false;
 };
 
-
+const closeInsuranceDialog = (isSaved) => {
+  if (isSaved) listInsurances();
+  insuranceShow.value = false;
+};
 
 const getFileName = (str) => {
   const dict = {
@@ -1068,4 +1171,52 @@ const deleteAttachment = (attachmentId) => {
     }
   });
 }
+
+const deleteInsurance = (insuranceId) => {
+  $q.dialog({
+    title: t('confirm'),
+    message: t('confirmDeleteInsurance'),
+    cancel: true,
+    persistent: false,
+  }).onOk(async () => {
+    try {
+      loading.value = true;
+      await orderStore.deleteInsurance(insuranceId);
+      await listInsurances();
+      loading.value = false;
+      $q.notify({
+        type: 'positive',
+        position: 'top-right',
+        message: t('deleteSucceeded'),
+        progress: true,
+        actions: [
+          { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
+        ],
+      });
+    } catch (error) {
+      console.error(error);
+      $q.notify({
+        type: 'positive',
+        position: 'top-right',
+        message: t('failedToDelete'),
+        progress: true,
+        actions: [
+          { icon: 'close', color: 'white', round: true, handler: () => { /* ... */ } }
+        ],
+      });
+    }
+  });
+};
+
+const insuranceStatus = ref('all')
+
+const getInsuranceColor = (insurance) => {
+  if (insurance.is_paid) return 'green';
+  const dueDate = new Date(insurance.due_date);
+  const currentDate = new Date();
+  const daysDifference = (dueDate - currentDate) / (1000 * 60 * 60 * 24);
+  if (daysDifference < 0) return 'red';
+  if (daysDifference <= 30) return 'orange';
+  return 'rgb(25, 118, 210)';
+};
 </script>

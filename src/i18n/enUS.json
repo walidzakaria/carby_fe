@@ -427,5 +427,16 @@
   "other": "Other",
   "fileName": "File Name",
   "fileType": "File Type",
-  "attach": "Attach"
+  "attach": "Attach",
+  "title": "Title",
+  "insurance": "Insurance",
+  "insurancePaid": "Paid",
+  "unpaid": "Unpaid",
+  "addInsurance": "Add Insurance",
+  "confirmDeleteInsurance": "Are you sure you want to delete this insurance?",
+  "editInsurance": "Edit Insurance",
+  "isPaid": "Is Paid",
+  "dueDate": "Due Date",
+  "paymentDate": "Payment Date",
+  "paymentDone": "Payment Done"
 }

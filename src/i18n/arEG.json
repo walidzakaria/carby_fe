@@ -425,5 +425,16 @@
   "other": "أخرى",
   "fileName": "اسم الملف",
   "fileType": "نوع الملف",
-  "attach": "إرفاق"
+  "attach": "إرفاق",
+  "title": "العنوان",
+  "insurance": "التأمين",
+  "insurancePaid": "مدفوع",
+  "unpaid": "غير مدفوع",
+  "addInsurance": "إضافة تأمين",
+  "confirmDeleteInsurance": "هل تريد بالتأكيد حذف هذا التأمين؟",
+  "editInsurance": "تعديل التأمين",
+  "isPaid": "مدفوع",
+  "dueDate": "تاريخ الاستحقاق",
+  "paymentDate": "تاريخ الدفع",
+  "paymentDone": "تم الدفع"
 }
