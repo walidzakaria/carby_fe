@@ -9,23 +9,15 @@
           <q-list class="row">
             <q-item class="col-lg-6 col-md-6 col-sm-10 col-xs-10">
               <q-item-section>
-                <q-input type="text" dense v-model="productInfo.code" :label="t('code')"
-                  lazy-rules
-                  @keydown.prevent.enter="handleEnter"
-                  :rules="[val => !!val || t('required')]"
-                  :error="!!errors.code"
-                  :error-message="errors.code"
-                />
+                <q-input type="text" dense v-model="productInfo.code" :label="t('code')" lazy-rules
+                  @keydown.prevent.enter="handleEnter" :rules="[val => !!val || t('required')]" :error="!!errors.code"
+                  :error-message="errors.code" />
               </q-item-section>
             </q-item>
             <q-item class="col-lg-6 col-md-6 col-sm-10 col-xs-10">
               <q-item-section>
-                <q-input dense v-model="productInfo.name" :label="t('productName')"
-                lazy-rules
-                :rules="[val => !!val || t('required')]"
-                :error="!!errors.name"
-                :error-message="errors.name"
-                />
+                <q-input dense v-model="productInfo.name" :label="t('productName')" lazy-rules maxlength="3"
+                  :rules="[val => !!val || t('required')]" :error="!!errors.name" :error-message="errors.name" />
               </q-item-section>
             </q-item>
             <q-item class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
@@ -33,33 +25,21 @@
                 <q-list>
                   <q-item clickable v-ripple @click="addDescription">
                     <q-item-section avatar>
-                      <q-avatar color="teal" text-color="white" icon="add"/>
+                      <q-avatar color="teal" text-color="white" icon="add" />
                     </q-item-section>
                     <q-item-section>{{ t('addDescription') }}</q-item-section>
                   </q-item>
                   <div style="height: 180px; overflow: auto;">
-                    <q-item
-                      clickable
-                      v-ripple
-                      dense
-                      v-for="(description, index) in productInfo.descriptions" :key="index"
-                    >
+                    <q-item clickable v-ripple dense v-for="(description, index) in productInfo.descriptions"
+                      :key="index">
                       <q-item-section>
-                        <q-input
-                          v-model="description.name"
-                          :label="t('description')"
-                          lazy-rules
-                          :rules="[val => !!val || t('required')]"
-                          dense
-                          outlined
-                        />
+                        <q-input v-model="description.name" :label="t('description')" lazy-rules maxlength="350"
+                          :rules="[val => !!val || t('required')]" dense outlined />
                       </q-item-section>
                       <q-item-section side>
                         <div class="text-grey-8 q-gutter-xs">
-                          <q-btn type="button"
-                            class="gt-xs" size="md"
-                            flat color="red" dense round
-                            icon="delete" @click="removeDescription(index)"/>
+                          <q-btn type="button" class="gt-xs" size="md" flat color="red" dense round icon="delete"
+                            @click="removeDescription(index)" />
                         </div>
                       </q-item-section>
                     </q-item>
@@ -70,18 +50,11 @@
           </q-list>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn class="text-capitalize text-white"
-            type="button"
-            color="grey"
-            style="min-width: 130px;"
+          <q-btn class="text-capitalize text-white" type="button" color="grey" style="min-width: 130px;"
             :label="t('cancel')" @click="handleClose(false);">
           </q-btn>
-          <q-btn class="text-capitalize text-white"
-            type="submit"
-            color="green"
-            :loading="loading"
-            style="min-width: 130px;"
-            :label="t('save')">
+          <q-btn class="text-capitalize text-white" type="submit" color="green" :loading="loading"
+            style="min-width: 130px;" :label="t('save')">
             <template v-slot:loading>
               <q-spinner-facebook />
             </template>
@@ -125,7 +98,7 @@ const productInfo = ref({
 const errors = ref({});
 const loading = ref(false);
 
-const saveProduct = async() => {
+const saveProduct = async () => {
   loading.value = true;
   errors.value = {};
 
@@ -154,7 +127,7 @@ const saveProduct = async() => {
       ],
     });
     handleClose(true);
-  } catch(error) {
+  } catch (error) {
     console.error(error);
     if (error.status === 403) return;
     if (error.response && error.response.data) {
@@ -206,7 +179,7 @@ const addDescription = () => {
   });
 };
 
-const removeDescription = async(descriptionIndex) => {
+const removeDescription = async (descriptionIndex) => {
   try {
     if (productInfo.value.descriptions[descriptionIndex].id > 0) {
       await productStore.deleteDescription(productInfo.value.descriptions[descriptionIndex].id);

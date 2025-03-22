@@ -3,7 +3,7 @@
     <q-item>
       <q-item-section avatar>
         <q-avatar size="60px" class="shadow-10">
-          <q-icon :name="getIcon(status)" :color="getColor(status)"/>
+          <q-icon :name="getIcon(status)" :color="getColor(status)" />
         </q-avatar>
       </q-item-section>
 
@@ -32,6 +32,10 @@
       <div class="q-pa-xs text-grey-8">
         <table style="width: 100%;">
           <tr>
+            <td style="padding-right: 10px;">{{ t('title') }}:</td>
+            <td style="font-weight: 300;">{{ name }}</td>
+          </tr>
+          <tr>
             <td style="padding-right: 10px;">{{ t('customer') }}:</td>
             <td style="font-weight: 300;">{{ customer }}</td>
           </tr>
@@ -56,6 +60,7 @@ const props = defineProps({
   id: String,
   status: String,
   creationDate: String,
+  name: String,
   customer: String,
   total: Number,
   user: Number,
@@ -104,6 +109,4 @@ const handleClose = () => {
 };
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

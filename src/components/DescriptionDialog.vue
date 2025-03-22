@@ -10,28 +10,18 @@
 
             <q-item class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
               <q-item-section>
-                <q-input dense v-model="descriptionInfo.name" :label="t('description')"
-                  lazy-rules
-                  :rules="[val => !!val || t('required')]"
-                  autofocus
-                />
+                <q-input dense v-model="descriptionInfo.name" :label="t('description')" lazy-rules
+                  :rules="[val => !!val || t('required')]" maxlength="350" autofocus />
               </q-item-section>
             </q-item>
           </q-list>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn class="text-capitalize text-white"
-            type="button"
-            color="grey"
-            style="min-width: 130px;"
+          <q-btn class="text-capitalize text-white" type="button" color="grey" style="min-width: 130px;"
             :label="t('cancel')" @click="handleClose(false);">
           </q-btn>
-          <q-btn class="text-capitalize text-white"
-            type="submit"
-            color="green"
-            :loading="loading"
-            style="min-width: 130px;"
-            :label="t('save')">
+          <q-btn class="text-capitalize text-white" type="submit" color="green" :loading="loading"
+            style="min-width: 130px;" :label="t('save')">
             <template v-slot:loading>
               <q-spinner-facebook />
             </template>
@@ -67,7 +57,7 @@ const descriptionInfo = ref({
 
 const loading = ref(false);
 
-const saveDescription = async() => {
+const saveDescription = async () => {
   try {
     if (props.descriptionId > 0) {
       console.log(descriptionInfo.value);
@@ -94,7 +84,7 @@ onMounted(() => {
   descriptionInfo.value.product = productStore.getCurrentProduct.id;
   console.log('pro', productStore.getCurrentProduct, 'props', props.descriptionId);
   if (props.descriptionId > 0) {
-    const selectedDescription = productStore.getCurrentProduct.descriptions.find((d) => d.id === props.descriptionId );
+    const selectedDescription = productStore.getCurrentProduct.descriptions.find((d) => d.id === props.descriptionId);
     console.log('selectedDescription', selectedDescription);
     descriptionInfo.value.id = selectedDescription.id;
     descriptionInfo.value.name = selectedDescription.name;

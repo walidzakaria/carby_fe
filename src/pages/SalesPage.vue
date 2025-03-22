@@ -240,8 +240,7 @@
         </div>
       </q-card-section>
 
-      <q-card-section class="row q-pb-lg" style="border-bottom: 1px solid lightgrey;" :dir="getDir"
-        v-if="invoice.status !== 'Quotation'">
+      <q-card-section class="row q-pb-lg" style="border-bottom: 1px solid lightgrey;" :dir="getDir">
         <div class=" q-mt-sm text-subtitle1 text-grey-7 col-12">
           <div class="q-table__title q-mr-md text-black">{{ t('supplyOrder') }}</div>
           <div class="col-12 q-pt-md" style="border-top: 1px solid lightgrey; text-align: center;" dir="ltr">
@@ -421,8 +420,7 @@
 
       <q-card-actions class="row q-pb-lg" style="border-bottom: 1px solid lightgrey;" v-if="invoiceId !== 'NEW'">
         <div class="q-pa-md" style="margin: auto;">
-          <q-btn color="orange" :label="t('supplyOrder')" rounded outline icon="send"
-            v-if="invoice.status !== 'Quotation'">
+          <q-btn color="orange" :label="t('supplyOrder')" rounded outline icon="send">
             <q-menu>
               <div class="row no-wrap q-pa-md">
                 <div class="column">
@@ -443,13 +441,13 @@
             </q-menu>
           </q-btn>
           <q-btn color="green" :label="`${t('print')} (C)`" @click="printQuotation(false, 'c')" rounded outline
-            icon="print" v-if="invoice.status === 'Quotation'" class="q-mr-sm q-ml-sm"></q-btn>
+            icon="print" class="q-mr-sm q-ml-sm"></q-btn>
           <q-btn color="green" :label="`${t('print')} (B)`" @click="printQuotation(false, 'b')" rounded outline
-            icon="print" v-if="invoice.status === 'Quotation'" class="q-mr-sm q-ml-sm"></q-btn>
+            icon="print" class="q-mr-sm q-ml-sm"></q-btn>
           <q-btn color="green" :label="`${t('print')} (A)`" @click="printQuotation(false, 'a')" rounded outline
-            icon="print" v-if="invoice.status === 'Quotation'" class="q-mr-sm q-ml-sm"></q-btn>
+            icon="print" class="q-mr-sm q-ml-sm"></q-btn>
           <q-btn color="blue" :label="t('view')" @click="printQuotation(true)" rounded outline icon="summarize"
-            v-if="invoice.status === 'Quotation'" class="q-mr-sm q-ml-sm"></q-btn>
+            class="q-mr-sm q-ml-sm"></q-btn>
 
         </div>
 
@@ -760,11 +758,11 @@ const handleCloseDialog = async (isSaved) => {
 };
 
 const updateTotal = (rowInfo) => {
-  rowInfo.total_value = (rowInfo.quantity * rowInfo.sales_price).toFixed(0);
+  rowInfo.total_value = (rowInfo.quantity * rowInfo.sales_price);
 };
 
 const updateQuotationTotal = (rowInfo) => {
-  rowInfo.quotation_total_value = (rowInfo.quotation_quantity * rowInfo.sales_price).toFixed(0);
+  rowInfo.quotation_total_value = (rowInfo.quotation_quantity * rowInfo.sales_price);
 };
 
 const invoiceLineToEdit = ref(null);
@@ -871,22 +869,22 @@ const taxOptions = computed(() => [
 
 const totalWithTax = computed(() => {
   const salesValue = invoice.value.status === 'Quotation' ? invoiceSummary.value.netSales[selectedLabel.value.toLowerCase()] : invoiceSummary.value.netSales.invoice;
-  return Math.round(salesValue * (1 + (invoice.value.tax_amount / 100)));
+  return Math.round(salesValue * (1 + (invoice.value.tax_amount / 100)), 5);
 });
 
 const invoiceSummary = computed(() => {
   return {
     cost: {
-      a: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.unit_value_a || 0), 0)),
-      b: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.unit_value_b || 0), 0)),
-      c: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.unit_value_c || 0), 0)),
+      a: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.unit_value_a || 0), 5)),
+      b: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.unit_value_b || 0), 5)),
+      c: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.unit_value_c || 0), 5)),
       invoice: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quantity * line[`unit_value_${line.label.toLowerCase()}`] || 0), 0)),
     },
     netSales: {
-      a: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.sales_price_a || 0), 0)),
-      b: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.sales_price_b || 0), 0)),
-      c: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.sales_price_c || 0), 0)),
-      invoice: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quantity * line[`sales_price_${line.label.toLowerCase()}`] || 0), 0)),
+      a: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.sales_price_a || 0), 5)),
+      b: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.sales_price_b || 0), 5)),
+      c: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quotation_quantity * line.sales_price_c || 0), 5)),
+      invoice: Math.round(invoice.value.lines.reduce((acc, line) => acc + parseFloat(line.quantity * line[`sales_price_${line.label.toLowerCase()}`] || 0), 5)),
     },
   };
 });
@@ -926,9 +924,9 @@ const saveData = async () => {
     quotation_net_amount_a: invoiceSummary.value.netSales.a,
     quotation_net_amount_b: invoiceSummary.value.netSales.b,
     quotation_net_amount_c: invoiceSummary.value.netSales.c,
-    quotation_total_amount_a: Math.round(invoiceSummary.value.netSales.a * (1 + (invoice.value.tax_amount / 100))),
-    quotation_total_amount_b: Math.round(invoiceSummary.value.netSales.b * (1 + (invoice.value.tax_amount / 100))),
-    quotation_total_amount_c: Math.round(invoiceSummary.value.netSales.c * (1 + (invoice.value.tax_amount / 100))),
+    quotation_total_amount_a: Math.round(invoiceSummary.value.netSales.a * (1 + (invoice.value.tax_amount / 100)), 5),
+    quotation_total_amount_b: Math.round(invoiceSummary.value.netSales.b * (1 + (invoice.value.tax_amount / 100)), 5),
+    quotation_total_amount_c: Math.round(invoiceSummary.value.netSales.c * (1 + (invoice.value.tax_amount / 100)), 5),
     total_cost: invoiceSummary.value.cost.invoice,
     net_amount: invoiceSummary.value.netSales.invoice,
     total_amount: totalWithTax.value,
@@ -952,16 +950,16 @@ const saveData = async () => {
       sales_price_a: l.sales_price_a || 0,
       sales_price_b: l.sales_price_b || 0,
       sales_price_c: l.sales_price_c || 0,
-      quotation_total_value_a: Math.round(l.quotation_quantity * l.sales_price_a) || 0,
-      quotation_total_value_b: Math.round(l.quotation_quantity * l.sales_price_b) || 0,
-      quotation_total_value_c: Math.round(l.quotation_quantity * l.sales_price_c) || 0,
+      quotation_total_value_a: Math.round(l.quotation_quantity * l.sales_price_a, 5) || 0,
+      quotation_total_value_b: Math.round(l.quotation_quantity * l.sales_price_b, 5) || 0,
+      quotation_total_value_c: Math.round(l.quotation_quantity * l.sales_price_c, 5) || 0,
       label: l.label || null,
       country: l[`country_${l.label.toLowerCase()}`] || null,
       quantity: l.quantity || 0,
       unit_value: l[`unit_value_${l.label.toLowerCase()}`] || 0,
       margin: l[`margin_${l.label.toLowerCase()}`] || 0,
       sales_price: l[`sales_price_${l.label.toLowerCase()}`] || 0,
-      total_value: Math.round(l.quantity * l[`sales_price_${l.label.toLowerCase()}`] || 0),
+      total_value: Math.round(l.quantity * l[`sales_price_${l.label.toLowerCase()}`] || 0, 5),
     })),
   };
 
